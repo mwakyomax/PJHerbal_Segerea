@@ -1,0 +1,308 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Natural herbal nutritional supplement listed in PJHerbal Clinic dispensary.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 2, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "slug": { "type": "string", "minLength": 2, "maxLength": 120, "pattern": "^[a-z0-9\\-]+$" },
+        "name": { "type": "string", "minLength": 2, "maxLength": 150 },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Men's Health",
+            "Weight Management",
+            "Energy & Immunity",
+            "Women's Wellness",
+            "Brain & Focus",
+            "Detox & Digestion"
+          ]
+        },
+        "price": { "type": "number" },
+        "originalPrice": { "type": "number" },
+        "images": { "type": "array", "description": "Up to 6 image URLs" },
+        "shortBenefits": { "type": "string", "minLength": 2, "maxLength": 300 },
+        "description": { "type": "string", "minLength": 2, "maxLength": 3000 },
+        "ingredients": { "type": "array", "description": "Up to 20 active herbal ingredients" },
+        "usageInstructions": { "type": "string", "minLength": 2, "maxLength": 1000 },
+        "benefits": { "type": "array", "description": "Up to 15 health benefits" },
+        "warnings": { "type": "array", "description": "Up to 15 clinical warnings" },
+        "rating": { "type": "number" },
+        "reviewsCount": { "type": "number" },
+        "stock": { "type": "number" },
+        "isBestSeller": { "type": "boolean" },
+        "featuredBenefits": { "type": "array", "description": "Up to 10 featured benefit tags" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "slug",
+        "name",
+        "category",
+        "price",
+        "images",
+        "shortBenefits",
+        "description",
+        "ingredients",
+        "usageInstructions",
+        "benefits",
+        "warnings",
+        "rating",
+        "reviewsCount",
+        "stock",
+        "isBestSeller",
+        "featuredBenefits",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Patient review submitted on a supplement product.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 2, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "productId": { "type": "string", "minLength": 2, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "minLength": 2, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "author": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "rating": { "type": "number" },
+        "date": { "type": "string", "minLength": 4, "maxLength": 30 },
+        "comment": { "type": "string", "minLength": 3, "maxLength": 1000 },
+        "verified": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "productId", "userId", "author", "rating", "date", "comment", "verified", "createdAt"]
+    },
+    "BlogArticle": {
+      "title": "BlogArticle",
+      "description": "Clinical nutrition and herbal science blog article.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 2, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "slug": { "type": "string", "minLength": 2, "maxLength": 150, "pattern": "^[a-z0-9\\-]+$" },
+        "title": { "type": "string", "minLength": 3, "maxLength": 200 },
+        "summary": { "type": "string", "minLength": 3, "maxLength": 500 },
+        "content": { "type": "string", "minLength": 10, "maxLength": 20000 },
+        "author": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "date": { "type": "string", "minLength": 4, "maxLength": 40 },
+        "readTime": { "type": "string", "minLength": 2, "maxLength": 30 },
+        "category": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "image": { "type": "string", "minLength": 5, "maxLength": 1000 },
+        "tags": { "type": "array", "description": "Up to 15 article tags" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "slug", "title", "summary", "content", "author", "date", "readTime", "category", "image", "tags", "createdAt", "updatedAt"]
+    },
+    "PromoCampaign": {
+      "title": "PromoCampaign",
+      "description": "Active promotional coupon code for the dispensary.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 2, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "code": { "type": "string", "minLength": 2, "maxLength": 40, "pattern": "^[A-Z0-9_\\-]+$" },
+        "discountPercentage": { "type": "number" },
+        "description": { "type": "string", "minLength": 3, "maxLength": 300 },
+        "active": { "type": "boolean" },
+        "expiryDate": { "type": "string", "minLength": 4, "maxLength": 30 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "code", "discountPercentage", "description", "active", "expiryDate", "createdAt", "updatedAt"]
+    },
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Global announcement bar and hero campaign configuration.",
+      "type": "object",
+      "properties": {
+        "announcementText": { "type": "string", "minLength": 2, "maxLength": 300 },
+        "heroBadgeText": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "heroTitleText": { "type": "string", "minLength": 2, "maxLength": 160 },
+        "heroDescText": { "type": "string", "minLength": 2, "maxLength": 500 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["announcementText", "heroBadgeText", "heroTitleText", "heroDescText", "updatedAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Private patient account profile, default delivery address, and wishlist.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 2, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "email": { "type": "string", "format": "email", "maxLength": 150 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "region": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "district": { "type": "string", "maxLength": 100 },
+        "address": { "type": "string", "maxLength": 250 },
+        "role": { "type": "string", "enum": ["customer"] },
+        "wishlistIds": { "type": "array", "description": "Up to 50 product IDs" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "name", "email", "phone", "region", "district", "address", "role", "wishlistIds", "createdAt", "updatedAt"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Patient supplement order with courier logistics and verification status.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 2, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "minLength": 2, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "customerDetails": { "type": "object" },
+        "items": { "type": "array", "description": "1 to 25 ordered line items" },
+        "paymentMethod": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "paymentReference": { "type": "string", "maxLength": 100 },
+        "paymentStatus": { "type": "string", "enum": ["Pending", "Paid", "Failed"] },
+        "shippingFee": { "type": "number" },
+        "discount": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["Pending", "Paid", "Processing", "Dispatched", "Delivered", "Cancelled"] },
+        "date": { "type": "string", "minLength": 4, "maxLength": 30 },
+        "estimatedDelivery": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "deliveryCourier": { "type": "string", "maxLength": 100 },
+        "courierPhone": { "type": "string", "maxLength": 30 },
+        "trackingNumber": { "type": "string", "maxLength": 60 },
+        "deliveryStep": { "type": "string", "enum": ["assigned", "picked_up", "en_route", "delivered"] },
+        "trackingLogs": { "type": "array", "description": "1 to 25 tracking checkpoints" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "userId",
+        "customerDetails",
+        "items",
+        "paymentMethod",
+        "paymentStatus",
+        "shippingFee",
+        "discount",
+        "totalAmount",
+        "status",
+        "date",
+        "estimatedDelivery",
+        "trackingLogs",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ContactMessage": {
+      "title": "ContactMessage",
+      "description": "Patient consultation inquiry submitted via Contact form.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 2, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "minLength": 2, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 2, "maxLength": 120 },
+        "email": { "type": "string", "format": "email", "maxLength": 150 },
+        "message": { "type": "string", "minLength": 3, "maxLength": 2000 },
+        "status": { "type": "string", "enum": ["Unread", "Replied"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "name", "email", "message", "status", "createdAt"]
+    },
+    "NewsletterSubscriber": {
+      "title": "NewsletterSubscriber",
+      "description": "Email subscriber for PJHerbal wellness bulletins.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 2, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "minLength": 2, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "format": "email", "maxLength": 150 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "email", "createdAt"]
+    },
+    "PatientNote": {
+      "title": "PatientNote",
+      "description": "Confidential clinical note managed by clinic admin.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 2, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "patientEmail": { "type": "string", "format": "email", "maxLength": 150 },
+        "patientName": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "note": { "type": "string", "maxLength": 3000 },
+        "updatedBy": { "type": "string", "maxLength": 150 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "patientEmail", "patientName", "note", "updatedBy", "updatedAt"]
+    },
+    "CampaignDispatchLog": {
+      "title": "CampaignDispatchLog",
+      "description": "Audit log of WhatsApp outreach actions launched by admin.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 2, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "phone": { "type": "string", "minLength": 5, "maxLength": 30 },
+        "template": { "type": "string", "minLength": 2, "maxLength": 80 },
+        "message": { "type": "string", "minLength": 2, "maxLength": 1500 },
+        "dispatchedBy": { "type": "string", "maxLength": 150 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "phone", "template", "message", "dispatchedBy", "createdAt"]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Authorized clinic administrator directory entry.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 2, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "format": "email", "maxLength": 150 },
+        "role": { "type": "string", "enum": ["admin"] }
+      },
+      "required": ["uid", "email", "role"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Dispensary supplement catalog"
+    },
+    "/products/{productId}/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "Verified patient reviews for a supplement"
+    },
+    "/blogs/{blogId}": {
+      "schema": { "$ref": "#/entities/BlogArticle" },
+      "description": "Health and nutrition blog articles"
+    },
+    "/campaigns/{campaignId}": {
+      "schema": { "$ref": "#/entities/PromoCampaign" },
+      "description": "Promotional discount coupon codes"
+    },
+    "/siteSettings/{settingId}": {
+      "schema": { "$ref": "#/entities/SiteSettings" },
+      "description": "Landing page hero & announcement settings"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private patient profiles, saved addresses, and wishlist"
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Patient supplement orders and fulfillment tracking"
+    },
+    "/contactMessages/{messageId}": {
+      "schema": { "$ref": "#/entities/ContactMessage" },
+      "description": "Patient consultation contact form submissions"
+    },
+    "/newsletterSubscribers/{subscriberId}": {
+      "schema": { "$ref": "#/entities/NewsletterSubscriber" },
+      "description": "Wellness bulletin email subscriptions"
+    },
+    "/patientNotes/{noteId}": {
+      "schema": { "$ref": "#/entities/PatientNote" },
+      "description": "Admin-only confidential patient clinical notes"
+    },
+    "/campaignLogs/{logId}": {
+      "schema": { "$ref": "#/entities/CampaignDispatchLog" },
+      "description": "Admin-only WhatsApp campaign launch logs"
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRecord" },
+      "description": "Authorized clinic administrators"
+    }
+  }
+}

@@ -1,0 +1,475 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ==========================================
+    // GLOBAL HELPERS (PHASE 3 PRIMITIVES)
+    // ==========================================
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 2 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        request.auth.token.email == 'eliezaeliezer1318@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isValidEmail(val) {
+      return val is string && val.size() >= 5 && val.size() <= 150 && val.matches('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$');
+    }
+
+    function isValidStringList(arr, maxItems) {
+      return arr is list && arr.size() <= maxItems && (arr.size() == 0 || (arr[0] is string && arr[0].size() <= 300));
+    }
+
+    function isValidNonEmptyStringList(arr, maxItems) {
+      return arr is list && arr.size() >= 1 && arr.size() <= maxItems && arr[0] is string && arr[0].size() <= 500;
+    }
+
+    // ==========================================
+    // VALIDATION BLUEPRINTS (PHASE 2 & 4)
+    // ==========================================
+    function isValidCategory(cat) {
+      return cat in [
+        "Men's Health",
+        "Weight Management",
+        "Energy & Immunity",
+        "Women's Wellness",
+        "Brain & Focus",
+        "Detox & Digestion"
+      ];
+    }
+
+    function isValidProduct(data) {
+      return data.keys().hasAll([
+        'id', 'slug', 'name', 'category', 'price', 'images',
+        'shortBenefits', 'description', 'ingredients', 'usageInstructions',
+        'benefits', 'warnings', 'rating', 'reviewsCount', 'stock',
+        'isBestSeller', 'featuredBenefits', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'slug', 'name', 'category', 'price', 'originalPrice', 'images',
+        'shortBenefits', 'description', 'ingredients', 'usageInstructions',
+        'benefits', 'warnings', 'rating', 'reviewsCount', 'stock',
+        'isBestSeller', 'featuredBenefits', 'createdAt', 'updatedAt'
+      ]) &&
+      isValidId(data.id) &&
+      isValidString(data.slug, 2, 120) && data.slug.matches('^[a-z0-9\\-]+$') &&
+      isValidString(data.name, 2, 150) &&
+      isValidCategory(data.category) &&
+      (data.price is int || data.price is float) && data.price > 0 && data.price <= 100000000 &&
+      (!('originalPrice' in data) || ((data.originalPrice is int || data.originalPrice is float) && data.originalPrice > 0 && data.originalPrice <= 100000000)) &&
+      isValidNonEmptyStringList(data.images, 6) &&
+      isValidString(data.shortBenefits, 2, 300) &&
+      isValidString(data.description, 2, 3000) &&
+      isValidStringList(data.ingredients, 20) &&
+      isValidString(data.usageInstructions, 2, 1000) &&
+      isValidStringList(data.benefits, 15) &&
+      isValidStringList(data.warnings, 15) &&
+      (data.rating is int || data.rating is float) && data.rating >= 0 && data.rating <= 5 &&
+      (data.reviewsCount is int) && data.reviewsCount >= 0 && data.reviewsCount <= 100000 &&
+      (data.stock is int) && data.stock >= 0 && data.stock <= 100000 &&
+      data.isBestSeller is bool &&
+      isValidStringList(data.featuredBenefits, 10) &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidReview(data, productId) {
+      return data.keys().hasAll([
+        'id', 'productId', 'userId', 'author', 'rating', 'date', 'comment', 'verified', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'productId', 'userId', 'author', 'rating', 'date', 'comment', 'verified', 'createdAt'
+      ]) &&
+      isValidId(data.id) &&
+      data.productId == productId &&
+      isValidId(data.userId) &&
+      isValidString(data.author, 2, 100) &&
+      (data.rating is int || data.rating is float) && data.rating >= 1 && data.rating <= 5 &&
+      isValidString(data.date, 4, 30) &&
+      isValidString(data.comment, 3, 1000) &&
+      data.verified is bool &&
+      data.createdAt is timestamp;
+    }
+
+    function isValidBlog(data) {
+      return data.keys().hasAll([
+        'id', 'slug', 'title', 'summary', 'content', 'author', 'date', 'readTime', 'category', 'image', 'tags', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'slug', 'title', 'summary', 'content', 'author', 'date', 'readTime', 'category', 'image', 'tags', 'createdAt', 'updatedAt'
+      ]) &&
+      isValidId(data.id) &&
+      isValidString(data.slug, 2, 150) && data.slug.matches('^[a-z0-9\\-]+$') &&
+      isValidString(data.title, 3, 200) &&
+      isValidString(data.summary, 3, 500) &&
+      isValidString(data.content, 10, 20000) &&
+      isValidString(data.author, 2, 100) &&
+      isValidString(data.date, 4, 40) &&
+      isValidString(data.readTime, 2, 30) &&
+      isValidString(data.category, 2, 80) &&
+      isValidString(data.image, 5, 1000) &&
+      isValidStringList(data.tags, 15) &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidCampaign(data) {
+      return data.keys().hasAll([
+        'id', 'code', 'discountPercentage', 'description', 'active', 'expiryDate', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'code', 'discountPercentage', 'description', 'active', 'expiryDate', 'createdAt', 'updatedAt'
+      ]) &&
+      isValidId(data.id) &&
+      isValidString(data.code, 2, 40) && data.code.matches('^[A-Z0-9_\\-]+$') &&
+      (data.discountPercentage is int || data.discountPercentage is float) && data.discountPercentage >= 1 && data.discountPercentage <= 100 &&
+      isValidString(data.description, 3, 300) &&
+      data.active is bool &&
+      isValidString(data.expiryDate, 4, 30) &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidSiteSettings(data) {
+      return data.keys().hasAll([
+        'announcementText', 'heroBadgeText', 'heroTitleText', 'heroDescText', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'announcementText', 'heroBadgeText', 'heroTitleText', 'heroDescText', 'updatedAt'
+      ]) &&
+      isValidString(data.announcementText, 2, 300) &&
+      isValidString(data.heroBadgeText, 2, 80) &&
+      isValidString(data.heroTitleText, 2, 160) &&
+      isValidString(data.heroDescText, 2, 500) &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll([
+        'uid', 'name', 'email', 'phone', 'region', 'district', 'address', 'role', 'wishlistIds', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'uid', 'name', 'email', 'phone', 'region', 'district', 'address', 'role', 'wishlistIds', 'createdAt', 'updatedAt'
+      ]) &&
+      isValidId(data.uid) &&
+      isValidString(data.name, 1, 120) &&
+      isValidEmail(data.email) &&
+      data.phone is string && data.phone.size() <= 30 &&
+      isValidString(data.region, 2, 80) &&
+      data.district is string && data.district.size() <= 100 &&
+      data.address is string && data.address.size() <= 250 &&
+      data.role == 'customer' &&
+      isValidStringList(data.wishlistIds, 50) &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidCustomerDetails(details) {
+      return details is map &&
+        details.keys().hasAll(['fullName', 'phoneNumber', 'email', 'deliveryAddress', 'region', 'district']) &&
+        details.keys().hasOnly(['fullName', 'phoneNumber', 'email', 'deliveryAddress', 'region', 'district']) &&
+        isValidString(details.fullName, 2, 120) &&
+        isValidString(details.phoneNumber, 6, 30) &&
+        isValidEmail(details.email) &&
+        isValidString(details.deliveryAddress, 2, 300) &&
+        isValidString(details.region, 2, 80) &&
+        isValidString(details.district, 2, 100);
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll([
+        'id', 'userId', 'customerDetails', 'items', 'paymentMethod',
+        'paymentStatus', 'shippingFee', 'discount', 'totalAmount',
+        'status', 'date', 'estimatedDelivery', 'trackingLogs', 'createdAt', 'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'userId', 'customerDetails', 'items', 'paymentMethod', 'paymentReference',
+        'paymentStatus', 'shippingFee', 'discount', 'totalAmount',
+        'status', 'date', 'estimatedDelivery', 'deliveryCourier', 'courierPhone',
+        'trackingNumber', 'deliveryStep', 'trackingLogs', 'createdAt', 'updatedAt'
+      ]) &&
+      isValidId(data.id) &&
+      isValidId(data.userId) &&
+      isValidCustomerDetails(data.customerDetails) &&
+      data.items is list && data.items.size() >= 1 && data.items.size() <= 25 &&
+      data.items[0] is map &&
+      data.items[0].keys().hasAll(['productId', 'productName', 'price', 'quantity']) &&
+      isValidString(data.paymentMethod, 2, 100) &&
+      (!('paymentReference' in data) || (data.paymentReference is string && data.paymentReference.size() <= 100)) &&
+      data.paymentStatus in ['Pending', 'Paid', 'Failed'] &&
+      (data.shippingFee is int || data.shippingFee is float) && data.shippingFee >= 0 && data.shippingFee <= 1000000 &&
+      (data.discount is int || data.discount is float) && data.discount >= 0 && data.discount <= 10000000 &&
+      (data.totalAmount is int || data.totalAmount is float) && data.totalAmount >= 0 && data.totalAmount <= 100000000 &&
+      data.status in ['Pending', 'Paid', 'Processing', 'Dispatched', 'Delivered', 'Cancelled'] &&
+      isValidString(data.date, 4, 30) &&
+      isValidString(data.estimatedDelivery, 2, 120) &&
+      (!('deliveryCourier' in data) || (data.deliveryCourier is string && data.deliveryCourier.size() <= 100)) &&
+      (!('courierPhone' in data) || (data.courierPhone is string && data.courierPhone.size() <= 30)) &&
+      (!('trackingNumber' in data) || (data.trackingNumber is string && data.trackingNumber.size() <= 60)) &&
+      (!('deliveryStep' in data) || (data.deliveryStep in ['assigned', 'picked_up', 'en_route', 'delivered'])) &&
+      data.trackingLogs is list && data.trackingLogs.size() >= 1 && data.trackingLogs.size() <= 25 &&
+      data.trackingLogs[0] is map &&
+      data.trackingLogs[0].keys().hasAll(['status', 'timestamp', 'description']) &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidContactMessage(data) {
+      return data.keys().hasAll(['id', 'userId', 'name', 'email', 'message', 'status', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'userId', 'name', 'email', 'message', 'status', 'createdAt']) &&
+        isValidId(data.id) &&
+        isValidId(data.userId) &&
+        isValidString(data.name, 2, 120) &&
+        isValidEmail(data.email) &&
+        isValidString(data.message, 3, 2000) &&
+        data.status in ['Unread', 'Replied'] &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidNewsletterSubscriber(data) {
+      return data.keys().hasAll(['id', 'userId', 'email', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'userId', 'email', 'createdAt']) &&
+        isValidId(data.id) &&
+        isValidId(data.userId) &&
+        isValidEmail(data.email) &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidPatientNote(data) {
+      return data.keys().hasAll(['id', 'patientEmail', 'patientName', 'note', 'updatedBy', 'updatedAt']) &&
+        data.keys().hasOnly(['id', 'patientEmail', 'patientName', 'note', 'updatedBy', 'updatedAt']) &&
+        isValidId(data.id) &&
+        isValidEmail(data.patientEmail) &&
+        isValidString(data.patientName, 1, 120) &&
+        data.note is string && data.note.size() <= 3000 &&
+        isValidString(data.updatedBy, 2, 150) &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCampaignLog(data) {
+      return data.keys().hasAll(['id', 'phone', 'template', 'message', 'dispatchedBy', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'phone', 'template', 'message', 'dispatchedBy', 'createdAt']) &&
+        isValidId(data.id) &&
+        isValidString(data.phone, 5, 30) &&
+        isValidString(data.template, 2, 80) &&
+        isValidString(data.message, 2, 1500) &&
+        isValidString(data.dispatchedBy, 2, 150) &&
+        data.createdAt is timestamp;
+    }
+
+    // ==========================================
+    // COLLECTION MATCH RULES
+    // ==========================================
+
+    // Connection health check doc
+    match /test/connection {
+      allow get: if true;
+    }
+
+    // Admin directory (read-only for owner/admin; managed out-of-band)
+    match /admins/{adminId} {
+      allow get: if isValidId(adminId) && (isOwner(adminId) || isAdmin());
+      allow list: if isAdmin();
+    }
+
+    // Products Catalog
+    match /products/{productId} {
+      allow get: if isValidId(productId);
+      allow list: if true;
+      allow create: if isAdmin() && isValidId(productId) && isValidProduct(incoming()) && incoming().id == productId && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(productId) && isValidProduct(incoming()) && incoming().id == existing().id && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(productId);
+
+      // Product Reviews Subcollection (Master Gate checks parent product exists)
+      match /reviews/{reviewId} {
+        allow get: if isValidId(productId) && isValidId(reviewId);
+        allow list: if isValidId(productId);
+        allow create: if isVerifiedUser() &&
+          isValidId(productId) &&
+          isValidId(reviewId) &&
+          isValidReview(incoming(), productId) &&
+          incoming().id == reviewId &&
+          incoming().userId == request.auth.uid &&
+          incoming().createdAt == request.time &&
+          exists(/databases/$(database)/documents/products/$(productId));
+        allow update: if isVerifiedUser() &&
+          isValidId(productId) &&
+          isValidId(reviewId) &&
+          isValidReview(incoming(), productId) &&
+          (isAdmin() || (
+            existing().userId == request.auth.uid &&
+            incoming().userId == existing().userId &&
+            incoming().productId == existing().productId &&
+            incoming().id == existing().id &&
+            incoming().createdAt == existing().createdAt &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['rating', 'comment', 'date'])
+          ));
+        allow delete: if isVerifiedUser() && isValidId(productId) && isValidId(reviewId) && (isAdmin() || existing().userId == request.auth.uid);
+      }
+    }
+
+    // Clinical Blogs
+    match /blogs/{blogId} {
+      allow get: if isValidId(blogId);
+      allow list: if true;
+      allow create: if isAdmin() && isValidId(blogId) && isValidBlog(incoming()) && incoming().id == blogId && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(blogId) && isValidBlog(incoming()) && incoming().id == existing().id && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(blogId);
+    }
+
+    // Promotional Campaigns
+    match /campaigns/{campaignId} {
+      allow get: if isValidId(campaignId);
+      allow list: if true;
+      allow create: if isAdmin() && isValidId(campaignId) && isValidCampaign(incoming()) && incoming().id == campaignId && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(campaignId) && isValidCampaign(incoming()) && incoming().id == existing().id && incoming().createdAt == existing().createdAt && incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(campaignId);
+    }
+
+    // Site Settings (Hero & Announcement Bar)
+    match /siteSettings/{settingId} {
+      allow get: if isValidId(settingId);
+      allow list: if isAdmin();
+      allow create: if isAdmin() && isValidId(settingId) && isValidSiteSettings(incoming()) && incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(settingId) && isValidSiteSettings(incoming()) && incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(settingId);
+    }
+
+    // Private User Profiles (PII Isolated)
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isOwner(userId) &&
+        isValidUserProfile(incoming()) &&
+        incoming().uid == request.auth.uid &&
+        incoming().role == 'customer' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().role == existing().role &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (isAdmin() || (
+          isOwner(userId) &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'region', 'district', 'address', 'wishlistIds', 'updatedAt'])
+        ));
+      allow delete: if isAdmin() && isValidId(userId);
+    }
+
+    // Patient Orders (Query Enforcer + State Machine + Terminal Locking)
+    match /orders/{orderId} {
+      allow get: if isValidId(orderId) && isSignedIn() && (isAdmin() || existing().userId == request.auth.uid);
+      allow list: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if isVerifiedUser() &&
+        isValidId(orderId) &&
+        isValidOrder(incoming()) &&
+        incoming().id == orderId &&
+        incoming().userId == request.auth.uid &&
+        incoming().status == 'Pending' &&
+        incoming().paymentStatus == 'Pending' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() &&
+        isValidId(orderId) &&
+        isValidOrder(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (isAdmin() || (
+          isOwner(existing().userId) &&
+          existing().status == 'Pending' &&
+          incoming().status == 'Cancelled' &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'trackingLogs', 'updatedAt'])
+        ));
+      allow delete: if isAdmin() && isValidId(orderId);
+    }
+
+    // Contact Consultation Messages
+    match /contactMessages/{messageId} {
+      allow get, list: if isAdmin();
+      allow create: if isVerifiedUser() &&
+        isValidId(messageId) &&
+        isValidContactMessage(incoming()) &&
+        incoming().id == messageId &&
+        incoming().userId == request.auth.uid &&
+        incoming().status == 'Unread' &&
+        incoming().createdAt == request.time;
+      allow update: if isAdmin() &&
+        isValidId(messageId) &&
+        isValidContactMessage(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().userId == existing().userId &&
+        incoming().createdAt == existing().createdAt;
+      allow delete: if isAdmin() && isValidId(messageId);
+    }
+
+    // Newsletter Subscribers
+    match /newsletterSubscribers/{subscriberId} {
+      allow get, list: if isAdmin();
+      allow create: if isVerifiedUser() &&
+        isValidId(subscriberId) &&
+        isValidNewsletterSubscriber(incoming()) &&
+        incoming().id == subscriberId &&
+        incoming().userId == request.auth.uid &&
+        incoming().createdAt == request.time;
+      allow delete: if isAdmin() && isValidId(subscriberId);
+    }
+
+    // Confidential Patient Clinical Notes (Admin Only)
+    match /patientNotes/{noteId} {
+      allow get: if isAdmin() && isValidId(noteId);
+      allow list: if isAdmin();
+      allow create: if isAdmin() && isValidId(noteId) && isValidPatientNote(incoming()) && incoming().id == noteId && incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(noteId) && isValidPatientNote(incoming()) && incoming().id == existing().id && incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(noteId);
+    }
+
+    // WhatsApp Campaign Dispatch Logs (Admin Only)
+    match /campaignLogs/{logId} {
+      allow get: if isAdmin() && isValidId(logId);
+      allow list: if isAdmin();
+      allow create: if isAdmin() && isValidId(logId) && isValidCampaignLog(incoming()) && incoming().id == logId && incoming().createdAt == request.time;
+      allow delete: if isAdmin() && isValidId(logId);
+    }
+  }
+}
