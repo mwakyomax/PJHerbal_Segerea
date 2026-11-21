@@ -8,20 +8,23 @@ import {
   ShieldCheck,
   Truck,
   HeartHandshake,
-  Sparkles,
   Star,
   BookOpen,
   ArrowRight,
   MessageCircle,
-  TrendingUp,
   ChevronLeft,
   ChevronRight,
   Leaf,
   Heart,
-  Database
+  Database,
+  Scale,
+  Sun,
+  Brain,
+  MapPin,
+  Clock
 } from "lucide-react";
-import { motion } from "motion/react";
 import { Product, Category, BlogArticle, SiteSettings } from "../types";
+import { CLINIC_MEDIA, resolveClinicImage, resolveProductImage, handleImageFallback } from "../lib/clinicMedia";
 
 interface HomeViewProps {
   products: Product[];
@@ -53,34 +56,31 @@ export default function HomeView({
   const heroSlides = useMemo(
     () => [
       {
-        image: "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=1200&auto=format&fit=crop",
+        image: CLINIC_MEDIA.dispensary,
         title: siteSettings.heroTitleText,
-        subtitle: "PJHERBAL CLINIC — SEGEREA BRANCH",
+        kicker: `${siteSettings.heroBadgeText} · Segerea Branch`,
         description: siteSettings.heroDescText,
-        badge: siteSettings.heroBadgeText,
-        ctaPrimary: "Explore Dispensary",
-        ctaSecondary: "Chat With Specialist",
+        ctaPrimary: "Browse Dispensary",
+        ctaSecondary: "WhatsApp Herbalist",
         targetCategory: null as Category | null
       },
       {
-        image: "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=1200&auto=format&fit=crop",
-        title: "Prioritize Prostate & Men's Vitality",
-        subtitle: "MZEE-APPROVED NATURAL FORMULAS",
+        image: CLINIC_MEDIA.prostate,
+        title: "Targeted Prostate & Men's Vitality Care",
+        kicker: "Men's Health · Segerea Dispensary",
         description:
-          "Defend against nighttime bathroom trips and reclaim your physical strength with our high-grade Saw Palmetto and pumpkin seed extracts.",
-        badge: "Specialist Approved",
+          "Standardized Saw Palmetto berry and roasted pumpkin seed extracts prepared to ease nighttime urinary discomfort and support daily strength.",
         ctaPrimary: "Shop Men's Health",
         ctaSecondary: "Consult on WhatsApp",
         targetCategory: "Men's Health" as Category
       },
       {
-        image: "https://images.unsplash.com/photo-1611070973770-b1a672610041?w=1200&auto=format&fit=crop",
-        title: "Pure Moringa from Tanzanian Soil",
-        subtitle: "NUTRITIONAL SUPERFOOD IMMUNE BOOSTER",
+        image: CLINIC_MEDIA.moringa,
+        title: "Pure Morogoro Moringa Leaf Formulations",
+        kicker: "Energy & Immunity · Morogoro Harvest",
         description:
-          "Sourced directly from organic Morogoro fields, providing 90+ essential nutrients, calcium, and iron for ultimate cell revitalization.",
-        badge: "Morogoro Sourced Special",
-        ctaPrimary: "Order Moringa Now",
+          "Shade-dried and finely milled Tanzanian Moringa oleifera leaf capsules providing natural iron, calcium, and steady daytime nourishment.",
+        ctaPrimary: "Order Moringa",
         ctaSecondary: "WhatsApp Consultation",
         targetCategory: "Energy & Immunity" as Category
       }
@@ -101,42 +101,47 @@ export default function HomeView({
   const bestSellers = products.filter((p) => p.isBestSeller);
   const displayedBestSellers = bestSellers.length > 0 ? bestSellers : products.slice(0, 4);
 
-  const featuredCategories: { name: Category; icon: string; count: number; desc: string }[] = [
+  const featuredCategories: {
+    name: Category;
+    icon: React.ComponentType<{ className?: string }>;
+    count: number;
+    desc: string;
+  }[] = [
     {
       name: "Men's Health",
-      icon: "👨‍⚕️",
+      icon: ShieldCheck,
       count: products.filter((p) => p.category === "Men's Health").length,
-      desc: "Vitality, stamina & prostate defense."
+      desc: "Prostate care & daily stamina."
     },
     {
       name: "Weight Management",
-      icon: "🔥",
+      icon: Scale,
       count: products.filter((p) => p.category === "Weight Management").length,
-      desc: "Metabolism boosters & starch neutralizers."
+      desc: "Metabolic support & meal balance."
     },
     {
       name: "Energy & Immunity",
-      icon: "⚡",
+      icon: Sun,
       count: products.filter((p) => p.category === "Energy & Immunity").length,
-      desc: "Morogoro Moringa & daily vitamin boosters."
+      desc: "Morogoro Moringa & daily nutrients."
     },
     {
       name: "Women's Wellness",
-      icon: "🌸",
+      icon: Heart,
       count: products.filter((p) => p.category === "Women's Wellness").length,
-      desc: "Hormonal balance, radiant glow & cycle care."
+      desc: "Cycle balance & herbal nourishment."
     },
     {
       name: "Brain & Focus",
-      icon: "🧠",
+      icon: Brain,
       count: products.filter((p) => p.category === "Brain & Focus").length,
-      desc: "Nootropic formulas for memory & concentration."
+      desc: "Clear recall & mental steadiness."
     },
     {
       name: "Detox & Digestion",
-      icon: "🍃",
+      icon: Leaf,
       count: products.filter((p) => p.category === "Detox & Digestion").length,
-      desc: "Overnight colon cleanse & bloating relief."
+      desc: "Gentle colon & bloating relief."
     }
   ];
 
@@ -155,7 +160,9 @@ export default function HomeView({
 
   const handleHeroPrimaryCta = (slideIdx: number, targetCategory: Category | null) => {
     if (slideIdx === 2) {
-      const moringa = products.find((p) => p.slug.includes("moringa") || p.name.toLowerCase().includes("moringa"));
+      const moringa = products.find(
+        (p) => p.slug.includes("moringa") || p.name.toLowerCase().includes("moringa")
+      );
       if (moringa) {
         handleProductClick(moringa.slug);
         return;
@@ -166,49 +173,40 @@ export default function HomeView({
   };
 
   return (
-    <div className="space-y-12 pb-16 font-sans bg-stone-50/60 text-slate-800">
-      {/* ROW 1: HERO SLIDER & FEATURED CATEGORIES BENTO GRID */}
+    <div className="space-y-12 pb-16 font-sans bg-stone-50/70 text-slate-800">
+      {/* 1. HERO SHOWCASE & CATEGORY DIRECTORY */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          {/* HERO SLIDER (col-span-7) */}
-          <div className="lg:col-span-7 bg-emerald-950 rounded-3xl overflow-hidden relative min-h-[440px] sm:min-h-[490px] lg:min-h-[530px] flex items-center shadow-md border border-emerald-900/70">
+          {/* Editorial Hero Slider */}
+          <div className="lg:col-span-7 bg-emerald-950 rounded-2xl overflow-hidden relative min-h-[430px] sm:min-h-[480px] lg:min-h-[510px] flex items-center border border-emerald-900">
             {heroSlides.map((slide, idx) => (
               <div
                 key={idx}
-                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                className={`absolute inset-0 transition-opacity duration-700 ease-out ${
                   idx === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
                 }`}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-emerald-950 via-emerald-950/85 to-slate-900/60 mix-blend-multiply z-1" />
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/95 via-emerald-950/80 to-emerald-950/35 z-1" />
                 <img
                   src={slide.image}
                   alt={slide.title}
-                  className="absolute inset-0 w-full h-full object-cover object-center scale-105 transition-transform duration-7000 ease-out"
+                  onError={handleImageFallback}
+                  className="absolute inset-0 w-full h-full object-cover object-center"
                   referrerPolicy="no-referrer"
                 />
 
                 <div className="absolute inset-0 z-2 flex items-center p-6 sm:p-10">
                   {idx === currentSlide && (
-                    <motion.div
-                      initial={{ opacity: 0, x: -16 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ duration: 0.45, ease: "easeOut" }}
-                      className="max-w-2xl text-left space-y-3.5"
-                    >
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400/40 text-amber-300 text-[10px] sm:text-xs font-bold uppercase tracking-wider shadow-xs">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                        {slide.badge}
-                      </span>
-
-                      <p className="text-emerald-400 font-extrabold text-xs tracking-widest uppercase">
-                        {slide.subtitle}
+                    <div className="max-w-xl text-left space-y-4">
+                      <p className="text-amber-300 font-semibold text-xs tracking-wide">
+                        {slide.kicker}
                       </p>
 
-                      <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-black text-white leading-tight">
+                      <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-white leading-tight text-balance">
                         {slide.title}
                       </h1>
 
-                      <p className="text-slate-200 text-xs sm:text-sm md:text-base max-w-lg leading-relaxed font-normal">
+                      <p className="text-stone-200 text-xs sm:text-sm md:text-base max-w-lg leading-relaxed font-normal">
                         {slide.description}
                       </p>
 
@@ -216,7 +214,7 @@ export default function HomeView({
                         <button
                           type="button"
                           onClick={() => handleHeroPrimaryCta(idx, slide.targetCategory)}
-                          className="px-5 py-2.5 rounded-full bg-amber-500 hover:bg-amber-400 text-emerald-950 font-black text-xs sm:text-sm transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-2"
+                          className="px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-emerald-950 font-bold text-xs sm:text-sm transition-colors cursor-pointer flex items-center gap-2 whitespace-nowrap shrink-0"
                           id="hero-explore-btn"
                         >
                           <span>{slide.ctaPrimary}</span>
@@ -224,18 +222,18 @@ export default function HomeView({
                         </button>
                         <a
                           href={getWhatsAppUrl(
-                            "Hello PJHerbal Clinic, I would like a digital consultation regarding my nutritional supplement requirements."
+                            "Hello PJHerbal Clinic, I would like advice regarding nutritional supplements."
                           )}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/25 font-bold text-xs sm:text-sm transition-all backdrop-blur-md flex items-center gap-1.5 cursor-pointer active:scale-95"
+                          className="px-4 py-2.5 rounded-lg bg-emerald-900/80 hover:bg-emerald-900 text-white border border-white/25 font-semibold text-xs sm:text-sm transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
                           id="hero-consult-btn"
                         >
-                          <MessageCircle className="w-4 h-4 text-emerald-400 fill-current" />
+                          <MessageCircle className="w-4 h-4 text-emerald-300" />
                           <span>{slide.ctaSecondary}</span>
                         </a>
                       </div>
-                    </motion.div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -245,7 +243,7 @@ export default function HomeView({
               type="button"
               onClick={prevSlide}
               aria-label="Previous slide"
-              className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700/50 text-white flex items-center justify-center transition-all opacity-70 hover:opacity-100 cursor-pointer"
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-emerald-950/75 hover:bg-emerald-900 border border-white/20 text-white flex items-center justify-center transition-opacity opacity-80 hover:opacity-100 cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -253,18 +251,18 @@ export default function HomeView({
               type="button"
               onClick={nextSlide}
               aria-label="Next slide"
-              className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-700/50 text-white flex items-center justify-center transition-all opacity-70 hover:opacity-100 cursor-pointer"
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-emerald-950/75 hover:bg-emerald-900 border border-white/20 text-white flex items-center justify-center transition-opacity opacity-80 hover:opacity-100 cursor-pointer"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
 
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+            <div className="absolute bottom-4 left-6 sm:left-10 z-20 flex gap-2">
               {heroSlides.map((_, idx) => (
                 <button
                   type="button"
                   key={idx}
                   onClick={() => setCurrentSlide(idx)}
-                  className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
+                  className={`h-1.5 rounded-full transition-all duration-200 cursor-pointer ${
                     idx === currentSlide ? "bg-amber-400 w-7" : "bg-white/40 hover:bg-white/70 w-2"
                   }`}
                   aria-label={`Go to slide ${idx + 1}`}
@@ -273,14 +271,14 @@ export default function HomeView({
             </div>
           </div>
 
-          {/* FEATURED CATEGORIES (col-span-5) */}
-          <div className="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-7 border border-stone-200/90 shadow-sm flex flex-col justify-between">
-            <div className="flex justify-between items-center mb-4">
+          {/* Targeted Formulations Directory */}
+          <div className="lg:col-span-5 bg-white rounded-2xl p-6 sm:p-7 border border-stone-200 flex flex-col justify-between">
+            <div className="flex justify-between items-baseline mb-5 border-b border-stone-100 pb-4">
               <div className="text-left">
-                <span className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-widest block mb-0.5">
-                  TARGETED FORMULATIONS
+                <span className="text-[11px] font-semibold text-emerald-800 tracking-wide block mb-0.5">
+                  Segerea Dispensary
                 </span>
-                <h3 className="font-black text-xl text-slate-800">Featured Categories</h3>
+                <h2 className="font-serif font-bold text-xl text-slate-900">Browse by Health Focus</h2>
               </div>
               <button
                 type="button"
@@ -288,404 +286,338 @@ export default function HomeView({
                   onSelectCategory(null);
                   setCurrentPath("shop");
                 }}
-                className="text-emerald-700 hover:text-emerald-900 text-xs font-bold transition-colors inline-flex items-center gap-1 hover:underline"
+                className="text-emerald-800 hover:text-emerald-950 text-xs font-semibold transition-colors inline-flex items-center gap-1 hover:underline whitespace-nowrap shrink-0 cursor-pointer"
               >
                 <span>View All</span>
-                <ArrowRight className="w-3 h-3" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5 flex-1">
-              {featuredCategories.map((cat) => (
-                <motion.button
-                  type="button"
-                  key={cat.name}
-                  onClick={() => handleFeaturedCategoryClick(cat.name)}
-                  whileHover={{ y: -3, scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                  className="bg-stone-50 hover:bg-emerald-50/80 rounded-2xl p-3.5 flex flex-col items-center justify-center border border-stone-200/70 hover:border-emerald-200 transition-all duration-200 cursor-pointer text-center group shadow-2xs"
-                >
-                  <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center text-lg mb-1.5 shadow-2xs border border-stone-200/60 group-hover:scale-110 transition-transform">
-                    {cat.icon}
-                  </div>
-                  <span className="text-xs font-extrabold text-slate-800 group-hover:text-emerald-950 block leading-tight">
-                    {cat.name}
-                  </span>
-                  <span className="text-[10px] text-slate-500 group-hover:text-emerald-800 font-semibold mt-1 bg-white px-2 py-0.5 rounded-full border border-stone-200/60">
-                    {cat.count} Products
-                  </span>
-                </motion.button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* DISPENSARY GUARANTEE TRUST BAR */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white border border-stone-200/90 rounded-2xl p-4 sm:p-5 shadow-2xs grid grid-cols-2 lg:grid-cols-4 gap-4 divide-y sm:divide-y-0 sm:divide-x divide-stone-100">
-          <div className="flex items-center gap-3 pt-2 sm:pt-0">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-100">
-              <Leaf className="w-5 h-5" />
-            </div>
-            <div className="text-left">
-              <h4 className="text-xs font-black text-slate-800">100% Organic Extracts</h4>
-              <p className="text-[11px] text-slate-500">Pure Morogoro & Tanzanian botanicals</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 pt-2 sm:pt-0 sm:pl-4">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-100">
-              <Truck className="w-5 h-5" />
-            </div>
-            <div className="text-left">
-              <h4 className="text-xs font-black text-slate-800">Fast Dar Delivery</h4>
-              <p className="text-[11px] text-slate-500">Dispatched within hours across DSM</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 pt-2 sm:pt-0 sm:pl-4">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-100">
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div className="text-left">
-              <h4 className="text-xs font-black text-slate-800">Tamper-Proof Seal</h4>
-              <p className="text-[11px] text-slate-500">Laboratory batch verified quality</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 pt-2 sm:pt-0 sm:pl-4">
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-100">
-              <HeartHandshake className="w-5 h-5" />
-            </div>
-            <div className="text-left">
-              <h4 className="text-xs font-black text-slate-800">Clinical Support</h4>
-              <p className="text-[11px] text-slate-500">Direct WhatsApp guidance daily</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ROW 2: QUICK STATS & CONSULTATION BENTO BOXES */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          <div className="lg:col-span-5 bg-emerald-50/70 border border-emerald-100/90 rounded-3xl p-6 sm:p-7 flex flex-col justify-center items-center text-center shadow-xs">
-            <span className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-widest block mb-2">
-              VERIFIED PATIENT COMMUNITY
-            </span>
-            <div className="text-4xl font-black text-emerald-950 tracking-tight mb-1">15,000+</div>
-            <div className="text-xs font-bold text-emerald-800 uppercase tracking-wide">
-              Patients Restored Across Tanzania
-            </div>
-
-            <div className="mt-4 flex -space-x-2">
-              <div className="w-8 h-8 rounded-full border-2 border-white bg-emerald-600 flex items-center justify-center text-xs text-white font-bold">
-                A
-              </div>
-              <div className="w-8 h-8 rounded-full border-2 border-white bg-amber-500 flex items-center justify-center text-xs text-emerald-950 font-bold">
-                B
-              </div>
-              <div className="w-8 h-8 rounded-full border-2 border-white bg-rose-500 flex items-center justify-center text-xs text-white font-bold">
-                L
-              </div>
-              <div className="w-8 h-8 rounded-full border-2 border-white bg-emerald-800 flex items-center justify-center text-[10px] text-white font-bold">
-                +15k
-              </div>
-            </div>
-            <p className="text-[11px] text-emerald-800/80 mt-3 max-w-xs leading-relaxed font-medium">
-              Serving Segerea, Ilala, Dar es Salaam, and nationwide clinics with authentic therapeutic botanicals.
-            </p>
-          </div>
-
-          <a
-            href={getWhatsAppUrl(
-              "Hello PJHerbal Clinic, I would like a digital consultation regarding my nutritional supplement requirements."
-            )}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="lg:col-span-7 bg-amber-500 hover:bg-amber-400 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-6 group cursor-pointer transition-all duration-300 shadow-sm border border-amber-400"
-          >
-            <div className="w-16 h-16 bg-emerald-950 rounded-2xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-md">
-              <MessageCircle className="w-8 h-8 text-amber-400 fill-current" />
-            </div>
-            <div className="text-left flex-1 space-y-1.5">
-              <span className="bg-emerald-950 text-amber-400 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-block">
-                FREE DIGITAL CONSULTATION
-              </span>
-              <h3 className="font-black text-emerald-950 text-xl leading-tight uppercase">
-                Direct WhatsApp Consultation
-              </h3>
-              <p className="text-emerald-950/90 text-xs font-medium max-w-md leading-relaxed">
-                Chat directly with Dr. Peter Juma and our certified wellness herbalists for personalized guidance on dosage and herbal remedies.
-              </p>
-              <div className="pt-1 flex items-center gap-1.5 text-xs font-black text-emerald-950 group-hover:translate-x-1.5 transition-transform">
-                <span>Start WhatsApp Conversation</span>
-                <ArrowRight className="w-4 h-4" />
-              </div>
-            </div>
-          </a>
-        </div>
-      </section>
-
-      {/* ROW 3: BEST SELLING PRODUCTS (LIVE FIRESTORE) */}
-      <section className="bg-emerald-950 text-white rounded-3xl py-12 px-6 sm:px-10 max-w-7xl mx-auto border border-emerald-900 shadow-md relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-emerald-800/10 rounded-full blur-3xl -z-1" />
-        <div className="absolute left-0 bottom-0 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl -z-1" />
-
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
-          <div className="space-y-1.5 text-left">
-            <span className="text-[10px] font-extrabold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5" /> Clinical Favorites
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-serif font-black text-white">Best Selling Formulations</h2>
-            <p className="text-emerald-200/80 text-xs max-w-lg">
-              Tanzania's most requested natural wellness solutions. Synchronized live from our Segerea Dispensary database.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              setCurrentPath("shop");
-              onSelectCategory(null);
-            }}
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-400 hover:text-amber-300 hover:underline transition-all shrink-0"
-          >
-            <span>See All Products ({products.length})</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {catalogLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bg-emerald-900/40 border border-emerald-800/60 rounded-3xl h-96 animate-pulse" />
-            ))}
-          </div>
-        ) : displayedBestSellers.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {displayedBestSellers.map((product) => {
-              const isWishlisted = wishlistIds.includes(product.id);
-              const outOfStock = product.stock <= 0;
-              return (
-                <motion.div
-                  key={product.id}
-                  whileHover={{ y: -5 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="bg-emerald-900/50 backdrop-blur-xs border border-emerald-800/90 hover:border-amber-400/50 rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col group h-full text-left"
-                >
-                  <div
-                    onClick={() => handleProductClick(product.slug)}
-                    className="relative aspect-square overflow-hidden cursor-pointer bg-white"
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
+              {featuredCategories.map((cat) => {
+                const Icon = cat.icon;
+                return (
+                  <button
+                    type="button"
+                    key={cat.name}
+                    onClick={() => handleFeaturedCategoryClick(cat.name)}
+                    className="bg-stone-50 hover:bg-emerald-50/70 rounded-xl p-3.5 flex items-start gap-3 border border-stone-200/80 hover:border-emerald-300 transition-colors cursor-pointer text-left group"
                   >
-                    <img
-                      src={product.images[0]}
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      referrerPolicy="no-referrer"
-                    />
-                    {product.originalPrice && (
-                      <span className="absolute top-3 left-3 bg-red-600 text-white font-extrabold text-[9px] px-2.5 py-1 rounded-full shadow-xs uppercase tracking-wider">
-                        -{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}%
+                    <Icon className="w-4 h-4 text-emerald-800 shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-slate-900 group-hover:text-emerald-950 block leading-snug">
+                        {cat.name}
                       </span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleWishlist(product);
-                      }}
-                      title={isWishlisted ? "Remove from Wishlist" : "Save to Wishlist"}
-                      className={`absolute top-3 right-3 p-2 rounded-full shadow-xs transition-all cursor-pointer ${
-                        isWishlisted
-                          ? "bg-rose-500 text-white"
-                          : "bg-white/90 text-slate-600 hover:text-rose-500"
-                      }`}
-                    >
-                      <Heart className={`w-3.5 h-3.5 ${isWishlisted ? "fill-current" : ""}`} />
-                    </button>
-                  </div>
-
-                  <div className="p-5 flex-1 flex flex-col justify-between">
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[9px] font-extrabold text-emerald-300 uppercase tracking-widest">
-                          {product.category}
-                        </span>
-                        {product.isBestSeller && (
-                          <span className="bg-amber-400 text-emerald-950 font-bold text-[8px] px-1.5 py-0.5 rounded-sm uppercase">
-                            Best Seller
-                          </span>
-                        )}
-                      </div>
-                      <h3
-                        onClick={() => handleProductClick(product.slug)}
-                        className="font-extrabold text-base text-white hover:text-amber-300 transition-colors cursor-pointer line-clamp-1"
-                      >
-                        {product.name}
-                      </h3>
-                      <p className="text-xs text-emerald-100/70 line-clamp-2 min-h-[32px] font-normal">
-                        {product.shortBenefits}
-                      </p>
-
-                      <div className="flex items-center gap-1.5">
-                        <div className="flex text-amber-400">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star key={i} className={`w-3 h-3 ${i < Math.round(product.rating) ? "fill-current" : "opacity-30"}`} />
-                          ))}
-                        </div>
-                        <span className="text-[10px] font-bold text-emerald-200">({product.reviewsCount} reviews)</span>
-                      </div>
-
-                      <div className="pt-1 flex items-baseline gap-2">
-                        <span className="text-base font-black text-amber-400">
-                          {product.price.toLocaleString()} TZS
-                        </span>
-                        {product.originalPrice && (
-                          <span className="text-xs text-emerald-300/50 line-through">
-                            {product.originalPrice.toLocaleString()} TZS
-                          </span>
-                        )}
-                      </div>
+                      <span className="text-[11px] text-slate-500 block mt-0.5 leading-snug">
+                        {cat.desc}
+                      </span>
+                      <span className="text-[11px] text-emerald-800 font-medium tabular-nums block mt-1">
+                        {cat.count} {cat.count === 1 ? "formulation" : "formulations"}
+                      </span>
                     </div>
-
-                    <div className="mt-5 grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        disabled={outOfStock}
-                        onClick={() => onAddToCart(product, 1)}
-                        className={`py-2.5 px-2 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1 shadow-xs border ${
-                          outOfStock
-                            ? "bg-emerald-900 text-emerald-400 border-emerald-800 cursor-not-allowed"
-                            : "bg-amber-500 hover:bg-amber-400 active:scale-95 text-emerald-950 border-amber-400 cursor-pointer"
-                        }`}
-                      >
-                        {outOfStock ? "Out of Stock" : "Add To Cart"}
-                      </button>
-                      <a
-                        href={getWhatsAppUrl(
-                          `Hello PJHerbal Segerea! I am interested in ordering "${product.name}". Please let me know how I can proceed.`
-                        )}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="py-2.5 px-2 rounded-xl bg-emerald-800 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs transition-all flex items-center justify-center gap-1 border border-emerald-700 cursor-pointer"
-                      >
-                        <MessageCircle className="w-3.5 h-3.5 fill-current" />
-                        Inquire
-                      </a>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        ) : (
-          <div className="bg-emerald-900/50 border border-emerald-800 rounded-3xl p-10 text-center space-y-4">
-            <Database className="w-10 h-10 text-amber-400 mx-auto" />
-            <div className="space-y-1">
-              <h3 className="text-lg font-serif font-bold text-white">Dispensary Catalog Not Yet Initialized</h3>
-              <p className="text-xs text-emerald-200/80 max-w-md mx-auto">
-                No formulations are currently published in Firestore. Clinic administrators can sign in to the Admin Portal to initialize the clinic catalog or add products.
+        </div>
+      </section>
+
+      {/* 2. DISPENSARY STANDARDS */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white border border-stone-200 rounded-xl p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 divide-y sm:divide-y-0 sm:divide-x divide-stone-100 text-left">
+          <div className="flex items-start gap-3 pt-2 sm:pt-0">
+            <Leaf className="w-5 h-5 text-emerald-800 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-xs font-bold text-slate-900">100% Botanical Extracts</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Sourced from Morogoro and regional growers</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 pt-3 sm:pt-0 sm:pl-5">
+            <Truck className="w-5 h-5 text-emerald-800 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-xs font-bold text-slate-900">Same-Day Dar Dispatch</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Courier delivery across Dar es Salaam</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 pt-3 sm:pt-0 sm:pl-5">
+            <ShieldCheck className="w-5 h-5 text-emerald-800 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-xs font-bold text-slate-900">Tamper-Evident Seals</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Inspected and sealed by batch at the clinic</p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 pt-3 sm:pt-0 sm:pl-5">
+            <HeartHandshake className="w-5 h-5 text-emerald-800 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-xs font-bold text-slate-900">Pharmacist Guidance</h3>
+              <p className="text-xs text-slate-500 mt-0.5">Direct WhatsApp & Segerea counter advice</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 3. BEST SELLING FORMULATIONS (LIVE FIRESTORE) */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-emerald-950 text-white rounded-2xl py-10 px-6 sm:px-10 border border-emerald-900">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+            <div className="space-y-1 text-left">
+              <p className="text-xs font-semibold text-amber-300">Dispensary Shelf</p>
+              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-white text-balance">
+                Frequently Requested Formulations
+              </h2>
+              <p className="text-emerald-200/85 text-xs sm:text-sm max-w-lg">
+                Prepared and stocked at PJHerbal Segerea for pickup or courier dispatch across Tanzania.
               </p>
             </div>
             <button
               type="button"
-              onClick={() => setCurrentPath("admin")}
-              className="px-5 py-2.5 rounded-full bg-amber-500 hover:bg-amber-400 text-emerald-950 text-xs font-black uppercase tracking-wider transition-all"
+              onClick={() => {
+                setCurrentPath("shop");
+                onSelectCategory(null);
+              }}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-300 hover:text-amber-200 hover:underline transition-colors shrink-0 cursor-pointer"
             >
-              Open Admin Portal
+              <span className="tabular-nums">View Full Catalog ({products.length})</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
-        )}
+
+          {catalogLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="bg-emerald-900/40 border border-emerald-800/60 rounded-xl h-88" />
+              ))}
+            </div>
+          ) : displayedBestSellers.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {displayedBestSellers.map((product) => {
+                const isWishlisted = wishlistIds.includes(product.id);
+                const outOfStock = product.stock <= 0;
+                return (
+                  <div
+                    key={product.id}
+                    className="bg-emerald-900/45 border border-emerald-800/90 hover:border-amber-400/60 rounded-xl overflow-hidden transition-transform duration-200 hover:-translate-y-0.5 flex flex-col group h-full text-left"
+                  >
+                    <div
+                      onClick={() => handleProductClick(product.slug)}
+                      className="relative aspect-[4/3] overflow-hidden cursor-pointer bg-stone-100"
+                    >
+                      <img
+                        src={resolveProductImage(product)}
+                        alt={product.name}
+                        onError={handleImageFallback}
+                        className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
+                        referrerPolicy="no-referrer"
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleWishlist(product);
+                        }}
+                        title={isWishlisted ? "Remove from Wishlist" : "Save to Wishlist"}
+                        className={`absolute top-2.5 right-2.5 p-2 rounded-full transition-colors cursor-pointer ${
+                          isWishlisted
+                            ? "bg-rose-600 text-white"
+                            : "bg-white/90 text-slate-600 hover:text-rose-600"
+                        }`}
+                      >
+                        <Heart className={`w-3.5 h-3.5 ${isWishlisted ? "fill-current" : ""}`} />
+                      </button>
+                    </div>
+
+                    <div className="p-4 flex-1 flex flex-col justify-between">
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-1.5 text-[11px] text-emerald-300 font-medium">
+                          <span className="truncate">{product.category}</span>
+                          {product.isBestSeller && (
+                            <>
+                              <span aria-hidden="true">·</span>
+                              <span className="text-amber-300 shrink-0">Clinic Favorite</span>
+                            </>
+                          )}
+                        </div>
+                        <h3
+                          onClick={() => handleProductClick(product.slug)}
+                          className="font-semibold text-base text-white hover:text-amber-300 transition-colors cursor-pointer line-clamp-1"
+                        >
+                          {product.name}
+                        </h3>
+                        <p className="text-xs text-emerald-100/75 line-clamp-2 min-h-[32px] font-normal">
+                          {product.shortBenefits}
+                        </p>
+
+                        <div className="flex items-center gap-1.5 pt-0.5">
+                          <div className="flex text-amber-400">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-3 h-3 ${i < Math.round(product.rating) ? "fill-current" : "opacity-30"}`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-[11px] text-emerald-200 tabular-nums">
+                            ({product.reviewsCount})
+                          </span>
+                        </div>
+
+                        <div className="pt-1 flex items-baseline gap-2 tabular-nums">
+                          <span className="text-[15px] font-bold text-amber-300">
+                            {product.price.toLocaleString()} TZS
+                          </span>
+                          {product.originalPrice && (
+                            <span className="text-xs text-emerald-300/60 line-through">
+                              {product.originalPrice.toLocaleString()} TZS
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          disabled={outOfStock}
+                          onClick={() => onAddToCart(product, 1)}
+                          className={`py-2 px-2 rounded-lg font-bold text-xs transition-colors flex items-center justify-center ${
+                            outOfStock
+                              ? "bg-emerald-900 text-emerald-400 border border-emerald-800 cursor-not-allowed"
+                              : "bg-amber-500 hover:bg-amber-400 text-emerald-950 cursor-pointer"
+                          }`}
+                        >
+                          {outOfStock ? "Out of Stock" : "Add to Cart"}
+                        </button>
+                        <a
+                          href={getWhatsAppUrl(
+                            `Hello PJHerbal Segerea! I would like more details about "${product.name}".`
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="py-2 px-2 rounded-lg bg-emerald-800 hover:bg-emerald-700 text-white font-semibold text-xs transition-colors flex items-center justify-center gap-1 border border-emerald-700 cursor-pointer"
+                        >
+                          <MessageCircle className="w-3.5 h-3.5" />
+                          <span>Inquire</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-emerald-900/50 border border-emerald-800 rounded-xl p-10 text-center space-y-4">
+              <Database className="w-9 h-9 text-amber-400 mx-auto" />
+              <div className="space-y-1">
+                <h3 className="text-lg font-serif font-bold text-white">Dispensary Catalog Not Initialized</h3>
+                <p className="text-xs text-emerald-200/80 max-w-md mx-auto">
+                  No formulations are currently published in Firestore. Clinic administrators can sign in to initialize the dispensary catalog or add products.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCurrentPath("admin")}
+                className="px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-emerald-950 text-xs font-bold transition-colors cursor-pointer"
+              >
+                Open Admin Console
+              </button>
+            </div>
+          )}
+        </div>
       </section>
 
-      {/* ROW 4: WHY CHOOSE US - ADVANCED BENTO GRID */}
+      {/* 4. SEGEREA CLINIC CONSULTATION & DIRECTOR NOTE */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          <div className="lg:col-span-7 bg-white border border-stone-200/90 rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col justify-between text-left space-y-6">
+          <div className="lg:col-span-7 bg-white border border-stone-200 rounded-2xl p-6 sm:p-8 flex flex-col justify-between text-left space-y-6">
             <div className="space-y-2">
-              <span className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-widest block">
-                PJHERBAL ADVANTAGE
+              <span className="text-xs font-semibold text-emerald-800 block">
+                Visit or Consult Online
               </span>
-              <h2 className="text-2xl sm:text-3xl font-serif font-black text-slate-800 leading-tight">
-                A Science-First Supplement Platform Sourced with Trust
+              <h2 className="text-2xl sm:text-3xl font-serif font-bold text-slate-900 leading-tight text-balance">
+                Segerea Mwisho Dispensary & Herbalist Consultation
               </h2>
-              <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal">
-                At PJHerbal Clinic Segerea Branch, we do not sell generic formulas. We research active bio-available botanical ingredients, certify every batch for purity, and deliver complete professional support.
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                Speak directly with Dr. Peter Juma and our Segerea dispensary staff before selecting a supplement. We advise on practical dosage schedules, food pairings, and safe use alongside daily medication.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-stone-50 border border-stone-200/60 rounded-2xl p-4 flex flex-col justify-between h-full">
-                <div className="p-2 bg-emerald-50 text-emerald-800 rounded-lg w-fit mb-3">
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-stone-100 text-xs">
+              <div className="flex items-start gap-2.5">
+                <MapPin className="w-4 h-4 text-emerald-800 shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-extrabold text-xs text-slate-800 leading-tight mb-1">100% Authentic</h4>
-                  <p className="text-[11px] text-slate-500 leading-snug">
-                    Every formulation is checked for purity and certified organic.
+                  <p className="font-bold text-slate-900">Branch Address</p>
+                  <p className="text-slate-500 mt-0.5 leading-relaxed">
+                    Segerea Mwisho, opposite the Catholic Church bus stop, Ilala, Dar es Salaam
                   </p>
                 </div>
               </div>
-
-              <div className="bg-stone-50 border border-stone-200/60 rounded-2xl p-4 flex flex-col justify-between h-full">
-                <div className="p-2 bg-emerald-50 text-emerald-800 rounded-lg w-fit mb-3">
-                  <Truck className="w-5 h-5" />
-                </div>
+              <div className="flex items-start gap-2.5">
+                <Clock className="w-4 h-4 text-emerald-800 shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="font-extrabold text-xs text-slate-800 leading-tight mb-1">Fast Delivery</h4>
-                  <p className="text-[11px] text-slate-500 leading-snug">
-                    Delivered within 24 hours in Dar es Salaam; 48 hours upcountry.
-                  </p>
-                </div>
-              </div>
-
-              <div className="bg-stone-50 border border-stone-200/60 rounded-2xl p-4 flex flex-col justify-between h-full">
-                <div className="p-2 bg-emerald-50 text-emerald-800 rounded-lg w-fit mb-3">
-                  <HeartHandshake className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="font-extrabold text-xs text-slate-800 leading-tight mb-1">Clinical Support</h4>
-                  <p className="text-[11px] text-slate-500 leading-snug">
-                    Instant direct access to certified nutritionists and herbalists.
+                  <p className="font-bold text-slate-900">Opening Hours</p>
+                  <p className="text-slate-500 mt-0.5 leading-relaxed">
+                    Mon – Sat: 8:00 AM – 8:00 PM
+                    <br />
+                    Sunday: 10:00 AM – 4:00 PM
                   </p>
                 </div>
               </div>
             </div>
+
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <a
+                href={getWhatsAppUrl(
+                  "Hello PJHerbal Segerea! I would like to speak with a herbalist regarding dosage and supplements."
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-5 py-2.5 rounded-lg bg-emerald-900 hover:bg-emerald-950 text-white text-xs font-bold inline-flex items-center gap-2 transition-colors"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span>Start WhatsApp Consultation</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => setCurrentPath("contact")}
+                className="px-4 py-2.5 rounded-lg border border-stone-300 hover:border-emerald-800 text-slate-700 hover:text-emerald-950 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Clinic Map & Contact Form
+              </button>
+            </div>
           </div>
 
-          <div className="lg:col-span-5 bg-emerald-950 rounded-3xl overflow-hidden relative flex flex-col justify-between p-6 sm:p-8 text-white min-h-[380px] border border-emerald-900 shadow-xs">
+          <div className="lg:col-span-5 bg-emerald-950 rounded-2xl overflow-hidden relative flex flex-col justify-between p-6 sm:p-8 text-white min-h-[340px] border border-emerald-900">
             <img
-              src="https://images.unsplash.com/photo-1505576399279-565b52d4ac71?w=600&auto=format&fit=crop"
-              alt="Authentic Herbs and Scientific Supplementation"
-              className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-25"
+              src={CLINIC_MEDIA.clinicInterior}
+              alt="PJHerbal Segerea Clinic Consultation Room"
+              onError={handleImageFallback}
+              className="absolute inset-0 w-full h-full object-cover opacity-30"
               referrerPolicy="no-referrer"
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-emerald-950 via-emerald-950/75 to-emerald-950/40" />
 
-            <span className="bg-amber-400 text-emerald-950 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest w-fit relative z-10">
+            <span className="text-xs font-semibold text-amber-300 relative z-10 text-left">
               Segerea Branch Director
             </span>
 
             <div className="space-y-4 relative z-10 text-left mt-auto">
-              <blockquote className="text-xs sm:text-sm font-normal leading-relaxed italic text-emerald-100">
-                "Our mission at PJHerbal Clinic is simple: bridging traditional African botanical science with modern clinical quality. We inspect every batch for dosage consistency."
+              <blockquote className="text-xs sm:text-sm font-normal leading-relaxed text-stone-100">
+                "Patients deserve honest botanical preparations with clear sourcing and careful dosing. Every bottle that leaves our Segerea shelf is checked for seal integrity and freshness."
               </blockquote>
 
               <div className="flex items-center justify-between border-t border-emerald-800/80 pt-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full border-2 border-amber-400 bg-emerald-800 flex items-center justify-center font-bold text-sm text-white">
-                    PJ
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-extrabold text-white">Dr. Peter Juma</h4>
-                    <p className="text-[10px] text-emerald-300">Head Clinical Director & Nutritionist</p>
-                  </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white">Dr. Peter Juma</h4>
+                  <p className="text-xs text-emerald-300">Clinical Herbalist & Nutritionist</p>
                 </div>
                 <a
                   href="tel:+255629899017"
-                  className="bg-amber-500 hover:bg-amber-400 text-emerald-950 font-bold px-3 py-1.5 rounded-lg text-[11px] transition-colors shadow-xs"
+                  className="bg-amber-500 hover:bg-amber-400 text-emerald-950 font-bold px-3.5 py-2 rounded-lg text-xs transition-colors whitespace-nowrap shrink-0"
                 >
-                  Call Clinic
+                  Call +255 629 899 017
                 </a>
               </div>
             </div>
@@ -693,109 +625,89 @@ export default function HomeView({
         </div>
       </section>
 
-      {/* ROW 5: TESTIMONIALS */}
+      {/* 5. PATIENT FEEDBACK */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-10 space-y-1.5">
-          <span className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-widest block">
-            PATIENT STORY CIRCLE
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-serif font-black text-slate-800">
-            Real People. Real Health Outcomes.
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Read how authentic nutritional support from our Segerea clinic transformed our customers' health and energy.
-          </p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-3 text-left">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-emerald-800">Patient Notes</p>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-slate-900">
+              Feedback from Dar es Salaam Patients
+            </h2>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
-          <div className="bg-white border border-stone-200/90 rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-all">
+          <div className="bg-white border border-stone-200 rounded-xl p-6 flex flex-col justify-between space-y-4">
             <div className="space-y-3">
               <div className="flex text-amber-500">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Star key={i} className="w-3.5 h-3.5 fill-current" />
                 ))}
               </div>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed italic">
-                "Nimekuwa nikisumbuliwa na tumbo kujaa na maumivu makali baada ya kula kwa miaka miwili. Nilitumia PJ CleanseDetox Colon Fit kwa ushauri wa daktari wa Segerea. Ndani ya siku tatu nilijisikia mwepesi, na gesi yote imeisha!"
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                "Nimekuwa nikisumbuliwa na tumbo kujaa na maumivu baada ya kula kwa muda mrefu. Nilitumia PJ CleanseDetox Colon Fit kwa ushauri wa daktari wa Segerea, ndani ya siku tatu nilijisikia mwepesi."
               </p>
             </div>
-            <div className="flex items-center gap-3 border-t border-stone-100 pt-4">
-              <div className="w-9 h-9 rounded-full bg-emerald-50 text-emerald-800 font-bold flex items-center justify-center text-xs">
-                LA
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-800">Lilian Aloyce</p>
-                <p className="text-[10px] text-slate-400">Kigamboni, Dar es Salaam</p>
-              </div>
+            <div className="border-t border-stone-100 pt-3">
+              <p className="text-xs font-bold text-slate-900">Lilian Aloyce</p>
+              <p className="text-[11px] text-slate-500">Kigamboni, Dar es Salaam</p>
             </div>
           </div>
 
-          <div className="bg-amber-50/60 border-2 border-amber-300 rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-all">
+          <div className="bg-white border border-stone-200 rounded-xl p-6 flex flex-col justify-between space-y-4">
             <div className="space-y-3">
               <div className="flex text-amber-500">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Star key={i} className="w-3.5 h-3.5 fill-current" />
                 ))}
               </div>
-              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed italic">
-                "Mzee wangu alikuwa anateseka na kuamka mara 4 hadi 5 kila usiku kukojoa. Baada ya kuanza PJ ProstActive Care Gold, sasa hivi anaamka mara moja tu au haamki kabisa! Ana amani ya moyo sana. Shukrani kwa huduma yenu."
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                "Mzee wangu alikuwa anaamka mara 4 hadi 5 kila usiku kukojoa. Baada ya kuanza PJ ProstActive Care Gold, sasa anaamka mara moja tu au analala mpaka asubuhi."
               </p>
             </div>
-            <div className="flex items-center gap-3 border-t border-amber-200 pt-4">
-              <div className="w-9 h-9 rounded-full bg-amber-500 text-emerald-950 font-bold flex items-center justify-center text-xs">
-                MI
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-800">Mzee Ibrahim</p>
-                <p className="text-[10px] text-amber-700 font-bold">Segerea, Dar es Salaam</p>
-              </div>
+            <div className="border-t border-stone-100 pt-3">
+              <p className="text-xs font-bold text-slate-900">Mzee Ibrahim</p>
+              <p className="text-[11px] text-slate-500">Segerea, Dar es Salaam</p>
             </div>
           </div>
 
-          <div className="bg-white border border-stone-200/90 rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-4 hover:shadow-md transition-all">
+          <div className="bg-white border border-stone-200 rounded-xl p-6 flex flex-col justify-between space-y-4">
             <div className="space-y-3">
               <div className="flex text-amber-500">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Star key={i} className="w-3.5 h-3.5 fill-current" />
                 ))}
               </div>
-              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed italic">
-                "PJ Moringa Power Boost has completely replaced my afternoon coffee cravings. I run a tech company and need high focus. This organic supplement provides continuous physical energy all afternoon!"
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                "Taking two capsules of PJ Pure Moringa with breakfast keeps my energy steady through afternoon work at Posta without relying on sweet tea or energy drinks."
               </p>
             </div>
-            <div className="flex items-center gap-3 border-t border-stone-100 pt-4">
-              <div className="w-9 h-9 rounded-full bg-emerald-50 text-emerald-800 font-bold flex items-center justify-center text-xs">
-                DB
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-800">Dev Baraka</p>
-                <p className="text-[10px] text-slate-400">Kinondoni, Dar es Salaam</p>
-              </div>
+            <div className="border-t border-stone-100 pt-3">
+              <p className="text-xs font-bold text-slate-900">Baraka Mussa</p>
+              <p className="text-[11px] text-slate-500">Kinondoni, Dar es Salaam</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ROW 6: HEALTH BLOGS */}
+      {/* 6. HEALTH NOTES & BLOGS */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-4">
-          <div className="space-y-1.5 text-left">
-            <span className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-widest block font-sans">
-              PJHERBAL CLINICAL RESEARCH
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-serif font-black text-slate-800">
-              Latest Nutritional & Health Blogs
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+          <div className="space-y-1 text-left">
+            <p className="text-xs font-semibold text-emerald-800">Clinic Journal</p>
+            <h2 className="text-2xl sm:text-3xl font-serif font-bold text-slate-900">
+              Nutritional & Herbal Guides
             </h2>
             <p className="text-xs sm:text-sm text-slate-500">
-              Education is the key to prevention. Read medical-herbal guides authored by our clinical director.
+              Practical articles on preventive nutrition and daily herbal habits written by our clinic staff.
             </p>
           </div>
           <button
             type="button"
             onClick={() => setCurrentPath("blog")}
-            className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 hover:text-emerald-700 transition-colors shrink-0"
+            className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 hover:text-emerald-950 hover:underline transition-colors shrink-0 cursor-pointer"
           >
-            <span>Visit Our Health Blog</span>
+            <span>All Health Articles</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -805,34 +717,35 @@ export default function HomeView({
             {blogs.slice(0, 3).map((article) => (
               <article
                 key={article.id}
-                className="bg-white border border-stone-200/90 hover:border-emerald-700/20 hover:shadow-md rounded-3xl overflow-hidden transition-all duration-300 flex flex-col h-full shadow-xs"
+                className="bg-white border border-stone-200 hover:border-emerald-700/30 rounded-xl overflow-hidden transition-colors flex flex-col h-full"
               >
                 <div
-                  className="aspect-video cursor-pointer overflow-hidden relative"
+                  className="aspect-video cursor-pointer overflow-hidden bg-stone-100"
                   onClick={() => {
                     setProductSlug(article.slug);
                     setCurrentPath(`blog/${article.slug}`);
                   }}
                 >
                   <img
-                    src={article.image}
+                    src={resolveClinicImage(article.image)}
                     alt={article.title}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                    onError={handleImageFallback}
+                    className="w-full h-full object-cover hover:scale-103 transition-transform duration-300"
                     referrerPolicy="no-referrer"
                   />
-                  <span className="absolute bottom-3 left-3 bg-emerald-950/85 text-emerald-300 text-[9px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider backdrop-blur-xs">
-                    {article.category}
-                  </span>
                 </div>
 
                 <div className="p-5 flex-1 flex flex-col justify-between">
-                  <div className="space-y-2.5">
-                    <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
+                      <span className="text-emerald-800 font-semibold">{article.category}</span>
+                      <span aria-hidden="true">·</span>
                       <span>{article.date}</span>
+                      <span aria-hidden="true">·</span>
                       <span>{article.readTime}</span>
                     </div>
                     <h3
-                      className="font-serif font-extrabold text-slate-800 text-base hover:text-emerald-800 transition-colors cursor-pointer line-clamp-2"
+                      className="font-serif font-bold text-slate-900 text-base hover:text-emerald-800 transition-colors cursor-pointer line-clamp-2"
                       onClick={() => {
                         setProductSlug(article.slug);
                         setCurrentPath(`blog/${article.slug}`);
@@ -840,7 +753,7 @@ export default function HomeView({
                     >
                       {article.title}
                     </h3>
-                    <p className="text-xs text-slate-500 leading-relaxed line-clamp-3 font-normal">
+                    <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">
                       {article.summary}
                     </p>
                   </div>
@@ -851,18 +764,18 @@ export default function HomeView({
                       setProductSlug(article.slug);
                       setCurrentPath(`blog/${article.slug}`);
                     }}
-                    className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 hover:text-amber-600 transition-colors"
+                    className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 hover:text-emerald-950 hover:underline transition-colors cursor-pointer"
                   >
                     <BookOpen className="w-3.5 h-3.5" />
-                    <span>Read Full Article</span>
+                    <span>Read Article</span>
                   </button>
                 </div>
               </article>
             ))}
           </div>
         ) : (
-          <div className="bg-white border border-stone-200 rounded-3xl p-8 text-center text-xs text-slate-500">
-            No clinical health articles have been published yet.
+          <div className="bg-white border border-stone-200 rounded-xl p-8 text-center text-xs text-slate-500">
+            No clinic articles published yet.
           </div>
         )}
       </section>

@@ -10,7 +10,6 @@ import {
   Truck,
   MessageCircle,
   ArrowRight,
-  Sparkles,
   ClipboardCheck
 } from "lucide-react";
 import { Order } from "../types";
@@ -64,9 +63,6 @@ export default function OrderSuccessView({ latestOrder, setCurrentPath }: OrderS
   return (
     <div className="max-w-xl mx-auto px-4 py-12 font-sans text-slate-800 text-center space-y-8">
       <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-8 space-y-4 shadow-2xs relative overflow-hidden">
-        <div className="absolute top-2 right-2 text-amber-500 opacity-60">
-          <Sparkles className="w-5 h-5" />
-        </div>
 
         <div className="w-16 h-16 rounded-full bg-emerald-800 text-amber-400 flex items-center justify-center mx-auto shadow-md border-2 border-white">
           <CheckCircle className="w-10 h-10" />

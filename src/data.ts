@@ -4,6 +4,7 @@
  */
 
 import { Product, BlogArticle, PromoCampaign } from "./types";
+import { CLINIC_MEDIA } from "./lib/clinicMedia";
 
 export const INITIAL_PRODUCTS: Product[] = [
   {
@@ -14,11 +15,10 @@ export const INITIAL_PRODUCTS: Product[] = [
     price: 45000,
     originalPrice: 55000,
     images: [
-      "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=500&auto=format&fit=crop",
-      "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=500&auto=format&fit=crop"
+      CLINIC_MEDIA.multiman
     ],
     shortBenefits: "Vitality, stamina, and reproductive health support.",
-    description: "PJ Multiman Herbal Force is a premium blend of scientifically proven African and Ayurvedic herbs designed to optimize male vitality, stamina, and cellular performance. Formulated to combat fatigue, improve prostate health, and boost blood flow naturally.",
+    description: "PJ Multiman Herbal Force combines traditional East African and botanical roots prepared to support daily male vitality, physical endurance, and circulation without synthetic stimulants.",
     ingredients: ["Tribulus Terrestris", "Moringa Oleifera Extract", "Ginseng", "Zinc Gluconate", "Macca Root"],
     usageInstructions: "Take 1 capsule twice daily with a warm glass of water, preferably after meals.",
     benefits: [
@@ -62,10 +62,10 @@ export const INITIAL_PRODUCTS: Product[] = [
     category: "Men's Health",
     price: 65000,
     images: [
-      "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=500&auto=format&fit=crop"
+      CLINIC_MEDIA.prostate
     ],
     shortBenefits: "Targeted prostate protection and urinary control.",
-    description: "Formulated specifically for men over 40 to maintain normal prostate size and healthy urinary function. Our natural formulation combines Saw Palmetto and Tanzanian Pumpkin Seed extract for ultimate efficacy.",
+    description: "Prepared specifically for men over 40 to support healthy prostate size and steady urinary flow. Combines standardized Saw Palmetto berry with cold-pressed Tanzanian pumpkin seed extract.",
     ingredients: ["Saw Palmetto Extract", "Pumpkin Seed Extract", "Pygeum Africanum", "Lycopene", "Selenium"],
     usageInstructions: "Take 2 capsules daily in the evening with food.",
     benefits: [
@@ -101,7 +101,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     price: 35000,
     originalPrice: 42000,
     images: [
-      "https://images.unsplash.com/photo-1544816155-12df9643f363?w=500&auto=format&fit=crop"
+      CLINIC_MEDIA.greenTea
     ],
     shortBenefits: "Accelerates fat metabolism and detoxification.",
     description: "A potent fat-burning supplement utilizing highly concentrated green tea catechins (EGCG) combined with African ginger to promote thermal activity, reduce stubborn belly fat, and supply healthy energy.",
@@ -140,7 +140,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     category: "Energy & Immunity",
     price: 30000,
     images: [
-      "https://images.unsplash.com/photo-1611070973770-b1a672610041?w=500&auto=format&fit=crop"
+      CLINIC_MEDIA.moringa
     ],
     shortBenefits: "Organic superfood containing 90+ essential nutrients.",
     description: "Harvested from organic farms in Morogoro, Tanzania, our Moringa capsules contain pure leaf powder packed with vitamins, iron, calcium, and essential amino acids to revitalize your entire body.",
@@ -177,10 +177,10 @@ export const INITIAL_PRODUCTS: Product[] = [
     price: 50000,
     originalPrice: 60000,
     images: [
-      "https://images.unsplash.com/photo-1505576399279-565b52d4ac71?w=500&auto=format&fit=crop"
+      CLINIC_MEDIA.femBalance
     ],
     shortBenefits: "Supports hormonal balance, skin glow, and mood.",
-    description: "A synergistic formulation crafted specifically for women to regulate monthly cycles, ease menopause discomfort, and nourish skin structure from within using Evening Primrose and Dong Quai.",
+    description: "A botanical blend prepared for women to help ease monthly cycle discomfort, support hormonal steadiness, and nourish skin naturally using Evening Primrose, Shatavari, and Dong Quai.",
     ingredients: ["Evening Primrose Oil Extract", "Dong Quai Root", "Shatavari Powder", "Folic Acid", "Vitamin E"],
     usageInstructions: "Take 1 capsule twice daily with meals.",
     benefits: [
@@ -214,10 +214,10 @@ export const INITIAL_PRODUCTS: Product[] = [
     category: "Brain & Focus",
     price: 55000,
     images: [
-      "https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?w=500&auto=format&fit=crop"
+      CLINIC_MEDIA.neuroFocus
     ],
     shortBenefits: "Sharpens mental focus, memory retention, and mental speed.",
-    description: "PJ NeuroFocus combines natural nootropics to help professionals, students, and active elderly citizens maintain clear cognitive performance, focus under high-stress conditions, and speed up memory recall.",
+    description: "PJ NeuroFocus combines traditional herbal extracts to help working adults, students, and older patients maintain clear concentration and steady recall through demanding days.",
     ingredients: ["Ginkgo Biloba Extract", "Bacopa Monnieri", "L-Theanine", "Phosphatidylserine", "Vitamin B12"],
     usageInstructions: "Take 1 capsule in the morning with a full glass of water. Perfect for work or study sessions.",
     benefits: [
@@ -236,10 +236,10 @@ export const INITIAL_PRODUCTS: Product[] = [
     reviews: [
       {
         id: "rev-6-1",
-        author: "Dev Baraka",
+        author: "Baraka Mussa",
         rating: 5,
         date: "2026-06-22",
-        comment: "Excellent for developers and analysts. It gives a clean mental clarity without the jitters of coffee.",
+        comment: "Helpful during long accounting days. Keeps my focus steady without the crash I get from strong coffee.",
         verified: true
       }
     ]
@@ -251,7 +251,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     category: "Detox & Digestion",
     price: 40000,
     images: [
-      "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=500&auto=format&fit=crop"
+      CLINIC_MEDIA.detox
     ],
     shortBenefits: "Gently purges toxins, relieves bloating, and eases digestion.",
     description: "A fast-acting, non-aggressive digestive detox formulation that sweeps the intestinal tract of sluggish waste material, bloating gases, and accumulated toxins. Revitalizes intestinal microflora and optimizes nutrient assimilation.",
@@ -289,10 +289,10 @@ export const INITIAL_PRODUCTS: Product[] = [
     category: "Weight Management",
     price: 48000,
     images: [
-      "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=500&auto=format&fit=crop"
+      CLINIC_MEDIA.ketoCarb
     ],
-    shortBenefits: "Neutralizes dietary carbs and accelerates ketosis.",
-    description: "Engineered to inhibit starch absorption and support low-carb, keto-friendly dietary lifestyles. It restricts carbohydrate breakdown, allowing them to pass through safely without spiking insulin levels.",
+    shortBenefits: "Supports carbohydrate control and balanced daily metabolism.",
+    description: "Prepared to help moderate starch absorption alongside balanced low-sugar meals, supporting steadier afternoon energy and sensible weight goals.",
     ingredients: ["White Kidney Bean Extract", "Garcinia Fruit Extract", "Green Coffee Bean", "Chromium Picolinate"],
     usageInstructions: "Take 1 capsule 10 minutes prior to eating starch-rich meals.",
     benefits: [
@@ -342,11 +342,11 @@ Katika kipindi hiki cha mabadiliko ya hali ya hewa Dar es Salaam, kuwa na kinga 
 
 #### Jinsi ya Kuitumia
 Kwa ufanisi wa hali ya juu na usafi, PJHerbal tumetengeneza **PJ Pure Moringa Power Boost** katika mfumo wa kapsuli (capsules). Hii inakuepusha na ladha kali ya unga na inakupa kipimo sahihi cha kila siku bila kupoteza virutubisho.`,
-    author: "Dr. Peter J. (Clinical Director, PJHerbal)",
+    author: "Dr. Peter Juma (Segerea Clinic)",
     date: "2026-06-24",
     readTime: "4 min read",
     category: "Nutrition",
-    image: "https://images.unsplash.com/photo-1611070973770-b1a672610041?w=500&auto=format&fit=crop",
+    image: CLINIC_MEDIA.moringa,
     tags: ["Moringa", "Immunity", "Local Herbs", "Tanzania"]
   },
   {
@@ -370,11 +370,11 @@ Watu wengi katika miji mikubwa kama Dar es Salaam wanakabiliwa na matatizo ya mf
 
 #### Ushauri wa Kitaalamu
 Unapofanya detoxification, epuka kula vyakula vizito vyenye gluten nyingi. Ruhusu tumbo lako kupumzika ili upate matokeo mazuri.`,
-    author: "Dr. Peter J. (Clinical Director, PJHerbal)",
+    author: "Dr. Peter Juma (Segerea Clinic)",
     date: "2026-06-18",
     readTime: "5 min read",
     category: "Detox",
-    image: "https://images.unsplash.com/photo-1544816155-12df9643f363?w=500&auto=format&fit=crop",
+    image: CLINIC_MEDIA.detox,
     tags: ["Detox", "Bloating", "Digestive Health", "Segerea Clinic"]
   },
   {
@@ -397,11 +397,11 @@ Ni ukweli wa kibiolojia kuwa kadiri mwanaume anavyoumba umri, homoni za kiume (T
 3.  **Matumizi ya Virutubisho Maalum:** Saw Palmetto imethibitishwa kisayansi kupunguza athari za homoni ya DHT ambayo inasababisha tezi dume kukua. Bidhaa kama **PJ ProstActive Care Gold** yetu hutoa virutubisho vyote hivi kwa pamoja kwa usalama wa hali ya juu.
 
 Wanaume wengi huwa na hofu kuongelea matatizo haya. Lakini katika kliniki yetu ya PJHerbal Segerea, tunatoa ushauri wa faragha na huduma bora za kurejesha afya yako kwa siri na heshima kubwa.`,
-    author: "Dr. Peter J. (Clinical Director, PJHerbal)",
+    author: "Dr. Peter Juma (Segerea Clinic)",
     date: "2026-06-12",
     readTime: "6 min read",
     category: "Men's Health",
-    image: "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=500&auto=format&fit=crop",
+    image: CLINIC_MEDIA.prostate,
     tags: ["Mens Health", "Prostate", "Testosterone", "Saw Palmetto"]
   }
 ];

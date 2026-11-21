@@ -19,11 +19,14 @@ import {
   AlertCircle,
   LogOut,
   XCircle,
-  Loader2
+  Loader2,
+  Menu,
+  X
 } from "lucide-react";
 import { Order, Product, UserProfile } from "../types";
 import { TANZANIA_REGIONS } from "../data";
 import { FirebaseUser } from "../lib/firebase";
+import { resolveProductImage, handleImageFallback } from "../lib/clinicMedia";
 
 interface CustomerDashboardViewProps {
   authUser: FirebaseUser | null;
@@ -63,8 +66,18 @@ export default function CustomerDashboardView({
   setProductSlug
 }: CustomerDashboardViewProps) {
   const [activeTab, setActiveTab] = useState<"orders" | "wishlist" | "addresses" | "security">("orders");
+  const [sidebarDrawerOpen, setSidebarDrawerOpen] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
   const [authError, setAuthError] = useState("");
+
+  useEffect(() => {
+    if (!sidebarDrawerOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSidebarDrawerOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [sidebarDrawerOpen]);
 
   const [nameInput, setNameInput] = useState("");
   const [phoneInput, setPhoneInput] = useState("");
@@ -206,83 +219,215 @@ export default function CustomerDashboardView({
     .slice(0, 2)
     .toUpperCase();
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 font-sans text-slate-800 text-left">
-      <div className="bg-emerald-950 text-white rounded-3xl p-6 md:p-8 mb-8 flex flex-col md:flex-row justify-between items-center gap-6 border border-emerald-900 shadow-md">
-        <div className="flex items-center gap-4 text-center md:text-left flex-col md:flex-row">
-          <div className="w-16 h-16 rounded-full bg-amber-400 text-emerald-950 font-serif font-extrabold text-2xl flex items-center justify-center shadow-lg border-2 border-white">
-            {initials || "PJ"}
-          </div>
-          <div className="space-y-1">
-            <h1 className="text-xl md:text-2xl font-serif font-bold">{displayName}</h1>
-            <p className="text-emerald-300 text-xs font-light">
-              {authUser.email} {userProfile?.phone ? `• ${userProfile.phone}` : ""}
-            </p>
-          </div>
-        </div>
+  const selectCustomerTab = (tab: typeof activeTab) => {
+    setActiveTab(tab);
+    setSidebarDrawerOpen(false);
+  };
 
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          <div className="text-center bg-emerald-900/60 border border-emerald-800 p-3 rounded-2xl min-w-28">
-            <span className="block text-2xl font-extrabold text-amber-400 font-mono">{orders.length}</span>
-            <span className="text-[10px] uppercase text-emerald-200 tracking-wider">Orders Logged</span>
-          </div>
-          <div className="text-center bg-emerald-900/60 border border-emerald-800 p-3 rounded-2xl min-w-28">
-            <span className="block text-2xl font-extrabold text-amber-400 font-mono">{wishlist.length}</span>
-            <span className="text-[10px] uppercase text-emerald-200 tracking-wider">Wishlisted</span>
-          </div>
-          <button
-            type="button"
-            onClick={onSignOut}
-            className="flex items-center gap-1.5 px-4 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/40 text-rose-100 text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </div>
+  const activeTabLabelMap: Record<typeof activeTab, string> = {
+    orders: "My Orders History",
+    wishlist: "Saved Wishlist",
+    addresses: "Delivery Addresses",
+    security: "Security & Account"
+  };
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <aside className="lg:col-span-3 space-y-2">
+  const renderSidebarNavigation = () => (
+    <nav className="space-y-5 text-left" aria-label="Customer dashboard navigation">
+      <div>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">
+          Dispensary Activity
+        </p>
+        <div className="space-y-1">
           {[
-            { id: "orders", label: "My Orders History", icon: ShoppingBag },
-            { id: "wishlist", label: "Saved Wishlist", icon: Heart },
-            { id: "addresses", label: "Delivery Addresses", icon: MapPin },
-            { id: "security", label: "Security & Account", icon: Lock }
+            {
+              id: "orders" as const,
+              label: "My Orders History",
+              icon: ShoppingBag,
+              countText: orders.length > 0 ? `${orders.length}` : null
+            },
+            {
+              id: "wishlist" as const,
+              label: "Saved Wishlist",
+              icon: Heart,
+              countText: wishlist.length > 0 ? `${wishlist.length}` : null
+            }
           ].map((tab) => {
             const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
             return (
               <button
                 type="button"
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as "orders" | "wishlist" | "addresses" | "security")}
-                className={`w-full flex items-center justify-between p-3.5 rounded-xl text-xs font-bold transition-all ${
-                  activeTab === tab.id
-                    ? "bg-emerald-800 text-white shadow-xs"
-                    : "text-slate-600 bg-white hover:bg-slate-50 border border-slate-100"
+                onClick={() => selectCustomerTab(tab.id)}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                  isActive
+                    ? "bg-emerald-900 text-white shadow-xs"
+                    : "text-slate-700 hover:bg-stone-100 hover:text-emerald-950"
                 }`}
               >
                 <span className="flex items-center gap-2.5">
-                  <Icon className="w-4 h-4" />
-                  {tab.label}
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-amber-300" : "text-slate-400"}`} />
+                  <span>{tab.label}</span>
                 </span>
-                <ChevronRight className="w-3.5 h-3.5" />
+                {tab.countText ? (
+                  <span className={`text-[11px] tabular-nums ${isActive ? "text-emerald-200" : "text-slate-500"}`}>
+                    {tab.countText}
+                  </span>
+                ) : (
+                  <ChevronRight className={`w-3.5 h-3.5 ${isActive ? "text-emerald-200" : "text-slate-300"}`} />
+                )}
               </button>
             );
           })}
+        </div>
+      </div>
 
-          <div className="pt-2 border-t border-slate-100/80">
+      <div>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">
+          Account & Delivery
+        </p>
+        <div className="space-y-1">
+          {[
+            { id: "addresses" as const, label: "Delivery Addresses", icon: MapPin },
+            { id: "security" as const, label: "Security & Account", icon: Lock }
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                type="button"
+                key={tab.id}
+                onClick={() => selectCustomerTab(tab.id)}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                  isActive
+                    ? "bg-emerald-900 text-white shadow-xs"
+                    : "text-slate-700 hover:bg-stone-100 hover:text-emerald-950"
+                }`}
+              >
+                <span className="flex items-center gap-2.5">
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-amber-300" : "text-slate-400"}`} />
+                  <span>{tab.label}</span>
+                </span>
+                <ChevronRight className={`w-3.5 h-3.5 ${isActive ? "text-emerald-200" : "text-slate-300"}`} />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="pt-2 border-t border-stone-200/80">
+        <button
+          type="button"
+          onClick={() => {
+            setSidebarDrawerOpen(false);
+            onSignOut();
+          }}
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
+        >
+          <LogOut className="w-4 h-4 text-rose-600 shrink-0" />
+          <span>Sign Out</span>
+        </button>
+      </div>
+    </nav>
+  );
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 font-sans text-slate-800 text-left">
+      <div className="bg-emerald-950 text-white rounded-3xl p-5 sm:p-6 md:p-8 mb-6 sm:mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-5 border border-emerald-900 shadow-md">
+        <div className="flex items-center gap-3.5 sm:gap-4 w-full md:w-auto">
+          <button
+            type="button"
+            onClick={() => setSidebarDrawerOpen(true)}
+            className="md:hidden p-2 rounded-xl border border-emerald-800 bg-emerald-900/70 text-white hover:bg-emerald-800 cursor-pointer shrink-0"
+            aria-label="Open customer sidebar menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-amber-400 text-emerald-950 font-serif font-extrabold text-lg sm:text-2xl flex items-center justify-center shadow-lg border-2 border-white shrink-0">
+            {initials || "PJ"}
+          </div>
+          <div className="space-y-1 min-w-0">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-serif font-bold truncate">{displayName}</h1>
+            <p className="text-emerald-300 text-xs font-light truncate">
+              {authUser.email} {userProfile?.phone ? `· ${userProfile.phone}` : ""}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 w-full md:w-auto">
+          <button
+            type="button"
+            onClick={() => setSidebarDrawerOpen(true)}
+            className="md:hidden inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-emerald-800 bg-emerald-900/60 text-xs font-semibold text-emerald-100 cursor-pointer"
+          >
+            <span>Section: {activeTabLabelMap[activeTab]}</span>
+            <ChevronRight className="w-3.5 h-3.5 text-emerald-300" />
+          </button>
+
+          <div className="flex items-center gap-3 tabular-nums">
+            <div className="text-center bg-emerald-900/60 border border-emerald-800 px-3.5 py-2.5 rounded-2xl min-w-24">
+              <span className="block text-xl font-extrabold text-amber-400 font-mono">{orders.length}</span>
+              <span className="text-[10px] uppercase text-emerald-200 tracking-wider">Orders</span>
+            </div>
+            <div className="text-center bg-emerald-900/60 border border-emerald-800 px-3.5 py-2.5 rounded-2xl min-w-24">
+              <span className="block text-xl font-extrabold text-amber-400 font-mono">{wishlist.length}</span>
+              <span className="text-[10px] uppercase text-emerald-200 tracking-wider">Wishlist</span>
+            </div>
             <button
               type="button"
               onClick={onSignOut}
-              className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-xl text-xs font-extrabold text-rose-600 hover:bg-rose-50 transition-all border border-transparent hover:text-rose-700"
+              className="flex items-center gap-1.5 px-4 py-3 rounded-2xl bg-rose-500/20 hover:bg-rose-500/30 border border-rose-400/40 text-rose-100 text-xs font-semibold transition-colors cursor-pointer"
             >
-              <LogOut className="w-4 h-4 text-rose-500" />
-              <span>Log Out of Session</span>
+              <LogOut className="w-4 h-4" />
+              <span>Sign Out</span>
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Mobile Left Sidebar Drawer */}
+      {sidebarDrawerOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex" role="dialog" aria-modal="true" aria-label="Customer sidebar navigation">
+          <div
+            className="fixed inset-0 bg-emerald-950/45 backdrop-blur-[2px]"
+            onClick={() => setSidebarDrawerOpen(false)}
+          />
+          <aside className="relative w-80 max-w-[86vw] h-full bg-white border-r border-stone-200 shadow-2xl flex flex-col z-10 text-left">
+            <div className="px-4 py-3.5 border-b border-stone-200/80 flex items-center justify-between bg-stone-50/70 shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-emerald-900 flex items-center justify-center text-white text-xs font-extrabold font-serif border border-amber-400/80 shrink-0">
+                  {initials || "PJ"}
+                </div>
+                <div className="min-w-0">
+                  <span className="font-serif text-sm font-bold text-emerald-950 block truncate">
+                    {displayName}
+                  </span>
+                  <span className="text-[10px] text-slate-500 block truncate">{authUser.email}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSidebarDrawerOpen(false)}
+                className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-stone-200/70 cursor-pointer"
+                aria-label="Close customer sidebar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-3 py-4">
+              {renderSidebarNavigation()}
+            </div>
+          </aside>
+        </div>
+      )}
+
+      <div className="flex flex-col md:flex-row gap-6 lg:gap-8 items-start">
+        <aside className="hidden md:block md:w-64 lg:w-72 shrink-0 md:sticky md:top-6 bg-white border border-stone-200/90 rounded-2xl p-3">
+          {renderSidebarNavigation()}
         </aside>
 
-        <main className="lg:col-span-9 bg-white border border-slate-100 rounded-2xl p-6 shadow-xs min-h-[400px]">
+        <main className="flex-1 min-w-0 w-full bg-white border border-stone-200/90 rounded-2xl p-5 sm:p-6 min-h-[400px]">
           {activeTab === "orders" && (
             <div className="space-y-6">
               <h3 className="font-serif font-bold text-emerald-950 text-lg border-b border-slate-50 pb-3 flex items-center gap-2">
@@ -441,8 +586,9 @@ export default function CustomerDashboardView({
                       className="border border-slate-100 rounded-2xl p-4 flex gap-4 items-center text-left hover:border-emerald-200 transition-colors bg-white shadow-2xs"
                     >
                       <img
-                        src={product.images[0]}
+                        src={resolveProductImage(product)}
                         alt={product.name}
+                        onError={handleImageFallback}
                         onClick={() => handleProductClick(product.slug)}
                         className="w-16 h-16 object-cover rounded-xl border border-slate-100 shadow-2xs cursor-pointer shrink-0"
                         referrerPolicy="no-referrer"

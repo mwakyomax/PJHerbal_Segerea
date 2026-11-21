@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { BlogArticle, Product } from "../types";
 import { FirebaseUser } from "../lib/firebase";
+import { CLINIC_MEDIA, resolveClinicImage, resolveProductImage, handleImageFallback } from "../lib/clinicMedia";
 
 // ==========================================
 // ABOUT VIEW
@@ -38,30 +39,31 @@ export function AboutView({ setCurrentPath }: { setCurrentPath: (path: string) =
         </p>
       </div>
 
-      <div className="relative aspect-video rounded-3xl overflow-hidden border border-slate-100 shadow-md">
+      <div className="relative aspect-video rounded-2xl overflow-hidden border border-stone-200">
         <img
-          src="https://images.unsplash.com/photo-1505576399279-565b52d4ac71?w=1200&auto=format&fit=crop"
-          alt="Clinic Lab"
+          src={CLINIC_MEDIA.clinicInterior}
+          alt="PJHerbal Segerea Clinic Interior"
+          onError={handleImageFallback}
           className="w-full h-full object-cover"
           referrerPolicy="no-referrer"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/80 to-transparent flex items-end p-6">
+        <div className="absolute inset-0 bg-gradient-to-t from-emerald-950/85 via-emerald-950/20 to-transparent flex items-end p-6">
           <p className="text-white text-sm font-semibold max-w-md">
-            Our physical Segerea Clinic premises, equipped with standard clinical nutrition consultation services.
+            Our Segerea Clinic premises in Ilala, Dar es Salaam, offering counter dispensing and nutrition consultations.
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-sm leading-relaxed">
         <div className="space-y-4">
-          <h3 className="font-serif font-bold text-emerald-950 text-xl border-b border-slate-50 pb-2">
+          <h3 className="font-serif font-bold text-emerald-950 text-xl border-b border-stone-200 pb-2">
             Our Clinical Mission
           </h3>
-          <p className="font-light text-slate-600">
-            At PJHerbal, we bridge the gap between traditional African herbal wisdom and cutting-edge pharmaceutical standards. We understand that wellness is not about artificial additives; it's about supplying the cellular matrix with premium, concentrated organic phytonutrients.
+          <p className="text-slate-600">
+            At PJHerbal Segerea, we prepare standardized East African botanical herbs alongside clear daily dosing instructions. Rather than relying on synthetic additives, our dispensary focuses on concentrated whole-plant powders and extracts.
           </p>
-          <p className="font-light text-slate-600">
-            Our Segerea Branch acts as a dispensary and consultation point, offering custom formulations targeting prostate tissue protection, optimal weight management, blood glucose stability, and cognitive performance.
+          <p className="text-slate-600">
+            Our Segerea Branch serves as both a walk-in dispensary and consultation desk, providing targeted formulations for prostate comfort, digestive balance, weight support, and daily energy.
           </p>
         </div>
 
@@ -338,15 +340,15 @@ export function BlogListView({
 }) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 font-sans text-slate-800 text-left">
-      <div className="text-center space-y-3 mb-12">
-        <span className="text-xs font-bold text-emerald-800 uppercase tracking-widest block">
-          NUTRITIONAL INTELLIGENCE
+      <div className="text-center space-y-2.5 mb-12">
+        <span className="text-xs font-semibold text-emerald-800 block">
+          Segerea Clinic Journal
         </span>
         <h1 className="text-3xl md:text-4xl font-serif font-bold text-emerald-950">
-          PJHerbal Health & Science Blog
+          PJHerbal Health & Nutrition Notes
         </h1>
         <p className="text-sm text-slate-500 max-w-md mx-auto">
-          Explore educational guidelines, traditional herbal science, and preventative dietary advice authored by Dr. Peter J.
+          Practical dietary guidance and herbal preparation notes authored by Dr. Peter Juma.
         </p>
       </div>
 
@@ -355,30 +357,31 @@ export function BlogListView({
           {blogs.map((article) => (
             <article
               key={article.id}
-              className="bg-white border border-slate-100 hover:border-emerald-100 hover:shadow-lg rounded-2xl overflow-hidden transition-all duration-300 flex flex-col h-full"
+              className="bg-white border border-stone-200 hover:border-emerald-700/30 rounded-xl overflow-hidden transition-colors flex flex-col h-full"
             >
               <div
-                className="aspect-video overflow-hidden relative cursor-pointer"
+                className="aspect-video overflow-hidden cursor-pointer bg-stone-100"
                 onClick={() => {
                   setProductSlug(article.slug);
                   setCurrentPath(`blog/${article.slug}`);
                 }}
               >
                 <img
-                  src={article.image}
+                  src={resolveClinicImage(article.image)}
                   alt={article.title}
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                  onError={handleImageFallback}
+                  className="w-full h-full object-cover hover:scale-103 transition-transform duration-300"
                   referrerPolicy="no-referrer"
                 />
-                <span className="absolute bottom-3 left-3 bg-emerald-950/80 text-emerald-300 text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
-                  {article.category}
-                </span>
               </div>
 
               <div className="p-5 flex-1 flex flex-col justify-between">
                 <div className="space-y-2.5">
-                  <div className="flex justify-between text-[11px] text-slate-400 font-medium">
+                  <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
+                    <span className="text-emerald-800 font-semibold">{article.category}</span>
+                    <span aria-hidden="true">·</span>
                     <span>{article.date}</span>
+                    <span aria-hidden="true">·</span>
                     <span>{article.readTime}</span>
                   </div>
                   <h3
@@ -390,7 +393,7 @@ export function BlogListView({
                   >
                     {article.title}
                   </h3>
-                  <p className="text-xs text-slate-500 leading-relaxed line-clamp-3 font-light">{article.summary}</p>
+                  <p className="text-xs text-slate-500 leading-relaxed line-clamp-3">{article.summary}</p>
                 </div>
 
                 <button
@@ -399,7 +402,7 @@ export function BlogListView({
                     setProductSlug(article.slug);
                     setCurrentPath(`blog/${article.slug}`);
                   }}
-                  className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 hover:text-amber-600 transition-colors"
+                  className="mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-emerald-800 hover:text-emerald-950 hover:underline transition-colors cursor-pointer"
                 >
                   <BookOpen className="w-3.5 h-3.5" /> Read Article
                 </button>
@@ -408,7 +411,7 @@ export function BlogListView({
           ))}
         </div>
       ) : (
-        <div className="bg-white border border-slate-100 rounded-3xl p-12 text-center text-xs text-slate-500">
+        <div className="bg-white border border-stone-200 rounded-2xl p-12 text-center text-xs text-slate-500">
           No clinical health articles have been published yet.
         </div>
       )}
@@ -448,30 +451,29 @@ export function BlogDetailView({ article, products, setCurrentPath, setProductSl
 
       <article className="space-y-6">
         <div className="space-y-3">
-          <span className="inline-block bg-emerald-50 text-emerald-800 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-            {article.category}
-          </span>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-emerald-950 leading-tight">
-            {article.title}
-          </h1>
-
-          <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 font-medium pt-1.5">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 font-medium">
+            <span className="text-emerald-800 font-semibold">{article.category}</span>
+            <span aria-hidden="true">·</span>
             <span className="flex items-center gap-1">
-              <User className="w-3.5 h-3.5 text-emerald-800" /> By {article.author}
+              <User className="w-3.5 h-3.5 text-emerald-800" /> {article.author}
             </span>
-            <span>•</span>
+            <span aria-hidden="true">·</span>
             <span className="flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5" /> {article.date}
             </span>
-            <span>•</span>
+            <span aria-hidden="true">·</span>
             <span>{article.readTime}</span>
           </div>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-serif font-bold text-emerald-950 leading-tight text-balance">
+            {article.title}
+          </h1>
         </div>
 
-        <div className="aspect-video w-full rounded-3xl overflow-hidden border border-slate-100 shadow-sm">
+        <div className="aspect-video w-full rounded-2xl overflow-hidden border border-stone-200 bg-stone-100">
           <img
-            src={article.image}
+            src={resolveClinicImage(article.image)}
             alt={article.title}
+            onError={handleImageFallback}
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
           />
@@ -510,24 +512,18 @@ export function BlogDetailView({ article, products, setCurrentPath, setProductSl
           })}
         </div>
 
-        <div className="flex flex-wrap gap-2 pt-6 border-t border-slate-50">
-          {article.tags.map((tag) => (
-            <span
-              key={tag}
-              className="bg-slate-100 text-slate-500 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full"
-            >
-              #{tag}
-            </span>
-          ))}
+        <div className="flex flex-wrap items-center gap-2 pt-6 border-t border-stone-200 text-xs text-slate-500">
+          <span className="font-semibold text-slate-700">Topics:</span>
+          <span>{article.tags.join(" · ")}</span>
         </div>
       </article>
 
       {supplementsToDisplay.length > 0 && (
-        <section className="mt-16 bg-slate-50 border border-slate-100 rounded-3xl p-6 md:p-8 space-y-6 text-left">
+        <section className="mt-16 bg-stone-50 border border-stone-200 rounded-2xl p-6 md:p-8 space-y-6 text-left">
           <div>
-            <h3 className="font-serif font-bold text-emerald-950 text-lg">Recommended Supplements for this Article</h3>
-            <p className="text-xs text-slate-400 mt-1 font-light">
-              Target specific biological pathways referenced in this clinical blog. Order now to secure direct courier dispatch.
+            <h3 className="font-serif font-bold text-emerald-950 text-lg">Related Dispensary Formulations</h3>
+            <p className="text-xs text-slate-500 mt-1">
+              Formulations mentioned in this article, stocked at Segerea Clinic for local pickup or delivery.
             </p>
           </div>
 
@@ -539,12 +535,13 @@ export function BlogDetailView({ article, products, setCurrentPath, setProductSl
                   setProductSlug(rp.slug);
                   setCurrentPath(`product/${rp.slug}`);
                 }}
-                className="bg-white border border-slate-200/50 hover:border-emerald-300 rounded-2xl p-4 flex gap-4 cursor-pointer transition-all hover:shadow-md items-center"
+                className="bg-white border border-stone-200 hover:border-emerald-700/40 rounded-xl p-4 flex gap-4 cursor-pointer transition-colors items-center"
               >
                 <img
-                  src={rp.images[0]}
+                  src={resolveProductImage(rp)}
                   alt={rp.name}
-                  className="w-16 h-16 object-cover rounded-xl border border-slate-100 shadow-2xs shrink-0"
+                  onError={handleImageFallback}
+                  className="w-16 h-16 object-cover rounded-lg border border-stone-200 shrink-0"
                   referrerPolicy="no-referrer"
                 />
                 <div className="min-w-0">

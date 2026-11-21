@@ -30,7 +30,10 @@ import {
   ExternalLink,
   CheckCircle2,
   PauseCircle,
-  PlayCircle
+  PlayCircle,
+  Menu,
+  X,
+  ChevronRight
 } from "lucide-react";
 import {
   Product,
@@ -47,6 +50,7 @@ import {
   CampaignDispatchLog
 } from "../types";
 import { FirebaseUser, ADMIN_EMAIL, toSlug } from "../lib/firebase";
+import { CLINIC_MEDIA } from "../lib/clinicMedia";
 import {
   subscribeAdminData,
   savePatientNoteDoc,
@@ -107,13 +111,17 @@ interface AdminDashboardViewProps {
 }
 
 const IMAGE_PRESETS = [
-  { id: "capsules", url: "https://images.unsplash.com/photo-1471864190281-a93a3070b6de?w=500&auto=format&fit=crop", label: "Capsules" },
-  { id: "amber-bottle", url: "https://images.unsplash.com/photo-1584017911766-d451b3d0e843?w=500&auto=format&fit=crop", label: "Bottle" },
-  { id: "leaves-mortar", url: "https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?w=500&auto=format&fit=crop", label: "Mortar" },
-  { id: "dropper", url: "https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=500&auto=format&fit=crop", label: "Dropper" }
+  { id: "multiman", url: CLINIC_MEDIA.multiman, label: "Multiman" },
+  { id: "prostate", url: CLINIC_MEDIA.prostate, label: "ProstActive" },
+  { id: "greenTea", url: CLINIC_MEDIA.greenTea, label: "Green Tea" },
+  { id: "moringa", url: CLINIC_MEDIA.moringa, label: "Moringa" },
+  { id: "femBalance", url: CLINIC_MEDIA.femBalance, label: "FemBalance" },
+  { id: "neuroFocus", url: CLINIC_MEDIA.neuroFocus, label: "NeuroFocus" },
+  { id: "detox", url: CLINIC_MEDIA.detox, label: "CleanseDetox" },
+  { id: "ketoCarb", url: CLINIC_MEDIA.ketoCarb, label: "KetoHerbal" }
 ];
 
-const DEFAULT_BLOG_IMAGE = "https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?w=600&auto=format&fit=crop";
+const DEFAULT_BLOG_IMAGE = CLINIC_MEDIA.clinicInterior;
 
 const COURIER_DIRECTORY: Record<string, string> = {
   Salim: "+255 629 899 017",
@@ -154,7 +162,17 @@ export default function AdminDashboardView({
   const [adminTab, setAdminTab] = useState<
     "analytics" | "orders" | "delivery" | "inventory" | "customers" | "marketing" | "blog-seo" | "landing-pages"
   >("analytics");
+  const [sidebarDrawerOpen, setSidebarDrawerOpen] = useState(false);
   const [chartTab, setChartTab] = useState<"sales-trend" | "category-sales" | "inventory-share">("sales-trend");
+
+  useEffect(() => {
+    if (!sidebarDrawerOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSidebarDrawerOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [sidebarDrawerOpen]);
 
   // Auth action state
   const [authLoading, setAuthLoading] = useState(false);
@@ -179,7 +197,15 @@ export default function AdminDashboardView({
   const [newProdPrice, setNewProdPrice] = useState(30000);
   const [newProdStock, setNewProdStock] = useState(25);
   const [newProdBenefits, setNewProdBenefits] = useState("");
-  const [newProdImage, setNewProdImage] = useState<string>(IMAGE_PRESETS[0].url);
+  const usedProductImages = useMemo(
+    () => new Set(products.map((p) => p.images?.[0]).filter(Boolean) as string[]),
+    [products]
+  );
+  const firstUnusedPreset = useMemo(
+    () => IMAGE_PRESETS.find((preset) => !usedProductImages.has(preset.url))?.url || CLINIC_MEDIA.dispensary,
+    [usedProductImages]
+  );
+  const [newProdImage, setNewProdImage] = useState<string>(firstUnusedPreset);
   const [prodSuccess, setProdSuccess] = useState("");
   const [prodError, setProdError] = useState("");
   const [savingProd, setSavingProd] = useState(false);
@@ -528,11 +554,20 @@ export default function AdminDashboardView({
     if (!newProdName.trim() || !newProdBenefits.trim()) return;
 
     const cleanImg = newProdImage.trim();
-    if (!cleanImg.startsWith("https://") && !cleanImg.startsWith("http://")) {
-      setProdError("Product image must be a valid HTTPS/HTTP URL (max 500 characters).");
+    const isValidImg =
+      cleanImg.startsWith("https://") ||
+      cleanImg.startsWith("http://") ||
+      cleanImg.startsWith("/") ||
+      cleanImg.startsWith("data:image/");
+    if (!isValidImg) {
+      setProdError("Product image must be a valid HTTPS/HTTP URL or selected preset.");
       return;
     }
-    if (cleanImg.length > 500) {
+    if (usedProductImages.has(cleanImg)) {
+      setProdError("Another product already uses this image. Select an unused image or provide a distinct HTTPS image URL.");
+      return;
+    }
+    if (cleanImg.length > 500 && !cleanImg.startsWith("data:image/")) {
       setProdError("Product image URL must be 500 characters or fewer.");
       return;
     }
@@ -565,7 +600,7 @@ export default function AdminDashboardView({
       setProdSuccess(`"${product.name}" published to Firestore dispensary catalog!`);
       setNewProdName("");
       setNewProdBenefits("");
-      setNewProdImage(IMAGE_PRESETS[0].url);
+      setNewProdImage(firstUnusedPreset);
       setTimeout(() => setProdSuccess(""), 4000);
     } catch (err) {
       setProdError(err instanceof Error ? err.message : "Failed to save formulation.");
@@ -830,34 +865,297 @@ export default function AdminDashboardView({
     );
   }
 
+  const selectAdminTab = (tab: typeof adminTab) => {
+    setAdminTab(tab);
+    setSidebarDrawerOpen(false);
+  };
+
+  const activeTabLabelMap: Record<typeof adminTab, string> = {
+    analytics: "Sales Analytics",
+    orders: "Patient Orders",
+    delivery: "Delivery & Courier",
+    customers: "Patients & Inbox",
+    inventory: "Stock & Catalog",
+    marketing: "Promo & WhatsApp",
+    "blog-seo": "Blogs & SEO Suite",
+    "landing-pages": "Landing Pages Manager"
+  };
+
+  const activeDispatchCount = orders.filter(
+    (o) => o.status === "Dispatched" || o.status === "Processing"
+  ).length;
+
+  const renderSidebarNavigation = () => (
+    <nav className="space-y-5 text-left" aria-label="Admin dashboard navigation">
+      <div>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">
+          Clinic Intelligence
+        </p>
+        <button
+          type="button"
+          onClick={() => selectAdminTab("analytics")}
+          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+            adminTab === "analytics"
+              ? "bg-emerald-900 text-white shadow-xs"
+              : "text-slate-700 hover:bg-stone-100 hover:text-emerald-950"
+          }`}
+        >
+          <span className="flex items-center gap-2.5">
+            <BarChart3 className={`w-4 h-4 shrink-0 ${adminTab === "analytics" ? "text-amber-300" : "text-slate-400"}`} />
+            <span>Sales Analytics</span>
+          </span>
+          <ChevronRight className={`w-3.5 h-3.5 ${adminTab === "analytics" ? "text-emerald-200" : "text-slate-300"}`} />
+        </button>
+      </div>
+
+      <div>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">
+          Patient Care & Logistics
+        </p>
+        <div className="space-y-1">
+          {[
+            {
+              id: "orders" as const,
+              label: "Patient Orders",
+              icon: ShoppingBag,
+              countText: pendingOrdersCount > 0 ? `${pendingOrdersCount} pending` : `${orders.length}`
+            },
+            {
+              id: "delivery" as const,
+              label: "Delivery & Courier",
+              icon: Truck,
+              countText: activeDispatchCount > 0 ? `${activeDispatchCount}` : null
+            },
+            {
+              id: "customers" as const,
+              label: "Patients & Inbox",
+              icon: Users,
+              countText:
+                unreadMessagesCount > 0
+                  ? `${unreadMessagesCount} new`
+                  : Object.keys(compiledPatients).length > 0
+                  ? `${Object.keys(compiledPatients).length}`
+                  : null
+            }
+          ].map((item) => {
+            const Icon = item.icon;
+            const isActive = adminTab === item.id;
+            return (
+              <button
+                type="button"
+                key={item.id}
+                onClick={() => selectAdminTab(item.id)}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                  isActive
+                    ? "bg-emerald-900 text-white shadow-xs"
+                    : "text-slate-700 hover:bg-stone-100 hover:text-emerald-950"
+                }`}
+              >
+                <span className="flex items-center gap-2.5">
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-amber-300" : "text-slate-400"}`} />
+                  <span>{item.label}</span>
+                </span>
+                {item.countText ? (
+                  <span className={`text-[11px] tabular-nums ${isActive ? "text-emerald-200" : "text-slate-500"}`}>
+                    {item.countText}
+                  </span>
+                ) : (
+                  <ChevronRight className={`w-3.5 h-3.5 ${isActive ? "text-emerald-200" : "text-slate-300"}`} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">
+          Supplement Dispensary
+        </p>
+        <button
+          type="button"
+          onClick={() => selectAdminTab("inventory")}
+          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+            adminTab === "inventory"
+              ? "bg-emerald-900 text-white shadow-xs"
+              : "text-slate-700 hover:bg-stone-100 hover:text-emerald-950"
+          }`}
+        >
+          <span className="flex items-center gap-2.5">
+            <Boxes className={`w-4 h-4 shrink-0 ${adminTab === "inventory" ? "text-amber-300" : "text-slate-400"}`} />
+            <span>Stock & Catalog</span>
+          </span>
+          <span
+            className={`text-[11px] tabular-nums flex items-center gap-1 ${
+              adminTab === "inventory"
+                ? "text-emerald-200"
+                : lowStockProducts.length > 0
+                ? "text-rose-700 font-bold"
+                : "text-slate-500"
+            }`}
+          >
+            {lowStockProducts.length > 0 && <AlertTriangle className="w-3 h-3" />}
+            <span>{lowStockProducts.length > 0 ? `${lowStockProducts.length} low` : products.length}</span>
+          </span>
+        </button>
+      </div>
+
+      <div>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">
+          Growth & Storefront
+        </p>
+        <div className="space-y-1">
+          {[
+            {
+              id: "marketing" as const,
+              label: "Promo & WhatsApp",
+              icon: Megaphone,
+              countText: campaigns.length > 0 ? `${campaigns.length}` : null
+            },
+            {
+              id: "blog-seo" as const,
+              label: "Blogs & SEO Suite",
+              icon: Globe,
+              countText: blogs.length > 0 ? `${blogs.length}` : null
+            },
+            {
+              id: "landing-pages" as const,
+              label: "Landing Pages Manager",
+              icon: LayoutTemplate,
+              countText: null
+            }
+          ].map((item) => {
+            const Icon = item.icon;
+            const isActive = adminTab === item.id;
+            return (
+              <button
+                type="button"
+                key={item.id}
+                onClick={() => selectAdminTab(item.id)}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                  isActive
+                    ? "bg-emerald-900 text-white shadow-xs"
+                    : "text-slate-700 hover:bg-stone-100 hover:text-emerald-950"
+                }`}
+              >
+                <span className="flex items-center gap-2.5">
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-amber-300" : "text-slate-400"}`} />
+                  <span>{item.label}</span>
+                </span>
+                {item.countText ? (
+                  <span className={`text-[11px] tabular-nums ${isActive ? "text-emerald-200" : "text-slate-500"}`}>
+                    {item.countText}
+                  </span>
+                ) : (
+                  <ChevronRight className={`w-3.5 h-3.5 ${isActive ? "text-emerald-200" : "text-slate-300"}`} />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </nav>
+  );
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 font-sans text-slate-800 text-left">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 font-sans text-slate-800 text-left">
       {/* Header */}
-      <div className="text-left mb-8 border-b border-slate-100 pb-5 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
-        <div>
-          <h1 className="text-3xl font-serif font-bold text-emerald-950 flex items-center gap-2">
-            <Settings className="w-8 h-8 text-emerald-800" /> Clinic Management Center
-          </h1>
-          <p className="text-slate-500 text-sm mt-1">
-            Live Firestore analytics, order verification, stock control, patient registry, and Segerea storefront settings.
-          </p>
+      <div className="text-left mb-6 sm:mb-8 border-b border-stone-200/80 pb-5 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+        <div className="flex items-start gap-3">
+          <button
+            type="button"
+            onClick={() => setSidebarDrawerOpen(true)}
+            className="md:hidden mt-1 p-2 rounded-xl border border-stone-200 bg-white text-slate-700 hover:text-emerald-900 hover:bg-stone-50 cursor-pointer shrink-0"
+            aria-label="Open admin sidebar menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-emerald-950 flex items-center gap-2">
+              <Settings className="w-7 h-7 text-emerald-800 shrink-0" />
+              <span>Clinic Management Center</span>
+            </h1>
+            <p className="text-slate-500 text-xs sm:text-sm mt-1">
+              Live Firestore analytics, order verification, stock control, patient registry, and Segerea storefront settings.
+            </p>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="bg-amber-100 text-amber-800 font-extrabold text-[10px] uppercase tracking-wider px-3.5 py-1.5 rounded-full border border-amber-200 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-700" />
-            Admin: {authUser.email}
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+          <button
+            type="button"
+            onClick={() => setSidebarDrawerOpen(true)}
+            className="md:hidden inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-stone-200 bg-stone-50 text-xs font-semibold text-emerald-950 cursor-pointer"
+          >
+            <span>Section: {activeTabLabelMap[adminTab]}</span>
+            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+          </button>
+
+          <span className="text-xs font-medium text-slate-600">
+            Admin: <strong className="text-emerald-950">{authUser.email}</strong>
           </span>
 
           <button
+            type="button"
             onClick={() => onSignOut()}
-            className="flex items-center gap-1 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-600 text-[10px] font-extrabold uppercase tracking-wider px-3.5 py-1.5 rounded-full border border-slate-200 transition-all cursor-pointer shadow-2xs"
+            className="flex items-center gap-1.5 bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-200 transition-colors cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Sign Out</span>
           </button>
         </div>
       </div>
+
+      {/* Mobile Left Sidebar Drawer */}
+      {sidebarDrawerOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex" role="dialog" aria-modal="true" aria-label="Admin sidebar navigation">
+          <div
+            className="fixed inset-0 bg-emerald-950/45 backdrop-blur-[2px]"
+            onClick={() => setSidebarDrawerOpen(false)}
+          />
+          <aside className="relative w-80 max-w-[86vw] h-full bg-white border-r border-stone-200 shadow-2xl flex flex-col z-10 text-left">
+            <div className="px-4 py-3.5 border-b border-stone-200/80 flex items-center justify-between bg-stone-50/70 shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-full bg-emerald-900 flex items-center justify-center text-white text-xs font-extrabold font-serif border border-amber-400/80 shrink-0">
+                  PJH
+                </div>
+                <div className="min-w-0">
+                  <span className="font-serif text-sm font-bold text-emerald-950 block truncate">
+                    {authUser.displayName || "Clinic Administrator"}
+                  </span>
+                  <span className="text-[10px] text-slate-500 block truncate">{authUser.email}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSidebarDrawerOpen(false)}
+                className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-stone-200/70 cursor-pointer"
+                aria-label="Close admin sidebar"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-3 py-4">
+              {renderSidebarNavigation()}
+            </div>
+
+            <div className="p-3.5 border-t border-stone-200/80 bg-stone-50/80 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setSidebarDrawerOpen(false);
+                  onSignOut();
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-white border border-rose-200 text-rose-700 text-xs font-semibold hover:bg-rose-50 transition-colors cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
 
       {globalError && (
         <div className="mb-6 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs font-semibold text-rose-700">
@@ -872,242 +1170,43 @@ export default function AdminDashboardView({
         </div>
       )}
 
-      {/* Grid: Sidebar Left, Workspace Right */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Sidebar */}
-        <div className="col-span-1 lg:col-span-3 lg:sticky lg:top-8 space-y-6">
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 shadow-xs">
+      {/* Persistent Left Sidebar (md+) + Main Workspace */}
+      <div className="flex flex-col md:flex-row gap-6 lg:gap-8 items-start">
+        <aside className="hidden md:block md:w-64 lg:w-72 shrink-0 md:sticky md:top-6 space-y-5">
+          <div className="bg-stone-50 border border-stone-200/90 rounded-2xl p-4">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-full bg-emerald-950 flex items-center justify-center text-white text-sm font-extrabold font-serif border-2 border-emerald-800 shadow-xs shrink-0">
+              <div className="w-10 h-10 rounded-full bg-emerald-950 flex items-center justify-center text-white text-xs font-extrabold font-serif border border-amber-400/70 shrink-0">
                 PJH
               </div>
               <div className="text-left min-w-0">
-                <h3 className="text-xs font-extrabold text-slate-900 tracking-wide truncate">
+                <h3 className="text-xs font-bold text-slate-900 truncate">
                   {authUser.displayName || "Clinic Administrator"}
                 </h3>
-                <p className="text-[10px] text-slate-500 font-medium truncate mt-0.5">{authUser.email}</p>
+                <p className="text-[11px] text-slate-500 truncate mt-0.5">{authUser.email}</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 mt-4 pt-4 border-t border-slate-200">
-              <div className="bg-white p-2 rounded-xl border border-slate-100 text-center">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Unpaid</p>
-                <p className="text-xs font-bold text-slate-700 mt-0.5">
+            <div className="grid grid-cols-2 gap-2 mt-3.5 pt-3.5 border-t border-stone-200/80 tabular-nums">
+              <div className="bg-white p-2 rounded-xl border border-stone-200/70 text-center">
+                <p className="text-[10px] font-semibold text-slate-500">Unpaid</p>
+                <p className="text-sm font-bold text-slate-900 mt-0.5">
                   {orders.filter((o) => o.paymentStatus !== "Paid" && o.status !== "Cancelled").length}
                 </p>
               </div>
-              <div className="bg-white p-2 rounded-xl border border-slate-100 text-center">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Inbox</p>
-                <p className="text-xs font-bold text-slate-700 mt-0.5">{unreadMessagesCount}</p>
+              <div className="bg-white p-2 rounded-xl border border-stone-200/70 text-center">
+                <p className="text-[10px] font-semibold text-slate-500">Inbox</p>
+                <p className="text-sm font-bold text-slate-900 mt-0.5">{unreadMessagesCount}</p>
               </div>
             </div>
           </div>
 
-          <nav className="bg-white border border-slate-100 rounded-2xl p-3 shadow-xs space-y-5 text-left">
-            <div>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">
-                Clinic Intelligence
-              </p>
-              <button
-                onClick={() => setAdminTab("analytics")}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all border cursor-pointer ${
-                  adminTab === "analytics"
-                    ? "bg-emerald-800 text-white border-emerald-800 shadow-sm"
-                    : "text-slate-600 bg-white hover:bg-slate-50 border-transparent hover:text-slate-900"
-                }`}
-              >
-                <span className="flex items-center gap-2.5">
-                  <BarChart3 className={`w-4 h-4 ${adminTab === "analytics" ? "text-white" : "text-slate-400"}`} />
-                  <span>Sales Analytics</span>
-                </span>
-              </button>
-            </div>
-
-            <div>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">
-                Patient Care & Logistics
-              </p>
-              <div className="space-y-1">
-                {[
-                  {
-                    id: "orders" as const,
-                    label: "Patient Orders",
-                    icon: ShoppingBag,
-                    badge:
-                      pendingOrdersCount > 0 ? (
-                        <span
-                          className={`px-2 py-0.5 text-[9px] font-bold rounded-full ${
-                            adminTab === "orders" ? "bg-white text-emerald-900" : "bg-amber-100 text-amber-800"
-                          }`}
-                        >
-                          {pendingOrdersCount}
-                        </span>
-                      ) : null
-                  },
-                  {
-                    id: "delivery" as const,
-                    label: "Delivery & Courier",
-                    icon: Truck,
-                    badge:
-                      orders.filter((o) => o.status === "Dispatched" || o.status === "Processing").length > 0 ? (
-                        <span
-                          className={`px-2 py-0.5 text-[9px] font-bold rounded-full ${
-                            adminTab === "delivery" ? "bg-white text-emerald-900" : "bg-blue-50 text-blue-800"
-                          }`}
-                        >
-                          {orders.filter((o) => o.status === "Dispatched" || o.status === "Processing").length}
-                        </span>
-                      ) : null
-                  },
-                  {
-                    id: "customers" as const,
-                    label: "Patients & Inbox",
-                    icon: Users,
-                    badge:
-                      unreadMessagesCount > 0 ? (
-                        <span
-                          className={`px-2 py-0.5 text-[9px] font-bold rounded-full ${
-                            adminTab === "customers" ? "bg-white text-emerald-900" : "bg-rose-100 text-rose-700"
-                          }`}
-                        >
-                          {unreadMessagesCount} new
-                        </span>
-                      ) : Object.keys(compiledPatients).length > 0 ? (
-                        <span
-                          className={`px-2 py-0.5 text-[9px] font-bold rounded-full ${
-                            adminTab === "customers" ? "bg-white text-emerald-900" : "bg-slate-100 text-slate-600"
-                          }`}
-                        >
-                          {Object.keys(compiledPatients).length}
-                        </span>
-                      ) : null
-                  }
-                ].map((item) => {
-                  const Icon = item.icon;
-                  const isActive = adminTab === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setAdminTab(item.id)}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all border cursor-pointer ${
-                        isActive
-                          ? "bg-emerald-800 text-white border-emerald-800 shadow-sm"
-                          : "text-slate-600 bg-white hover:bg-slate-50 border-transparent hover:text-slate-900"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2.5">
-                        <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-400"}`} />
-                        <span>{item.label}</span>
-                      </span>
-                      {item.badge}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">
-                Supplements Dispensary
-              </p>
-              <button
-                onClick={() => setAdminTab("inventory")}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all border cursor-pointer ${
-                  adminTab === "inventory"
-                    ? "bg-emerald-800 text-white border-emerald-800 shadow-sm"
-                    : "text-slate-600 bg-white hover:bg-slate-50 border-transparent hover:text-slate-900"
-                }`}
-              >
-                <span className="flex items-center gap-2.5">
-                  <Boxes className={`w-4 h-4 ${adminTab === "inventory" ? "text-white" : "text-slate-400"}`} />
-                  <span>Stock & Catalog</span>
-                </span>
-                {lowStockProducts.length > 0 ? (
-                  <span
-                    className={`px-2 py-0.5 text-[9px] font-bold rounded-full flex items-center gap-0.5 ${
-                      adminTab === "inventory" ? "bg-white text-emerald-900" : "bg-red-50 text-red-700 font-black"
-                    }`}
-                  >
-                    <AlertTriangle className="w-2.5 h-2.5" />
-                    <span>{lowStockProducts.length} low</span>
-                  </span>
-                ) : (
-                  <span
-                    className={`px-2 py-0.5 text-[9px] font-bold rounded-full ${
-                      adminTab === "inventory" ? "bg-white text-emerald-900" : "bg-emerald-50 text-emerald-800"
-                    }`}
-                  >
-                    {products.length}
-                  </span>
-                )}
-              </button>
-            </div>
-
-            <div>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">
-                Growth & Storefront
-              </p>
-              <div className="space-y-1">
-                {[
-                  {
-                    id: "marketing" as const,
-                    label: "Promo & WhatsApp",
-                    icon: Megaphone,
-                    badge:
-                      campaigns.length > 0 ? (
-                        <span
-                          className={`px-2 py-0.5 text-[9px] font-bold rounded-full ${
-                            adminTab === "marketing" ? "bg-white text-emerald-900" : "bg-slate-100 text-slate-600"
-                          }`}
-                        >
-                          {campaigns.length}
-                        </span>
-                      ) : null
-                  },
-                  {
-                    id: "blog-seo" as const,
-                    label: "Blogs & SEO Suite",
-                    icon: Globe,
-                    badge:
-                      blogs.length > 0 ? (
-                        <span
-                          className={`px-2 py-0.5 text-[9px] font-bold rounded-full ${
-                            adminTab === "blog-seo" ? "bg-white text-emerald-900" : "bg-slate-100 text-slate-600"
-                          }`}
-                        >
-                          {blogs.length}
-                        </span>
-                      ) : null
-                  },
-                  { id: "landing-pages" as const, label: "Landing Pages Manager", icon: LayoutTemplate, badge: null }
-                ].map((item) => {
-                  const Icon = item.icon;
-                  const isActive = adminTab === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setAdminTab(item.id)}
-                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-extrabold transition-all border cursor-pointer ${
-                        isActive
-                          ? "bg-emerald-800 text-white border-emerald-800 shadow-sm"
-                          : "text-slate-600 bg-white hover:bg-slate-50 border-transparent hover:text-slate-900"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2.5">
-                        <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-slate-400"}`} />
-                        <span>{item.label}</span>
-                      </span>
-                      {item.badge}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </nav>
-        </div>
+          <div className="bg-white border border-stone-200/90 rounded-2xl p-3">
+            {renderSidebarNavigation()}
+          </div>
+        </aside>
 
         {/* Main Workspace */}
-        <div className="lg:col-span-9 bg-white border border-slate-100 rounded-2xl p-6 shadow-xs min-h-[500px]">
+        <div className="flex-1 min-w-0 w-full bg-white border border-stone-200/90 rounded-2xl p-5 sm:p-6 min-h-[500px]">
           {/* TAB 1: ANALYTICS */}
           {adminTab === "analytics" && (
             <motion.div
@@ -2024,10 +2123,10 @@ export default function AdminDashboardView({
                             }}
                           />
                           <input
-                            type="url"
+                            type="text"
                             required
                             maxLength={500}
-                            placeholder="https://images.unsplash.com/..."
+                            placeholder="Select a preset below or enter HTTPS image URL"
                             value={newProdImage}
                             onChange={(e) => setNewProdImage(e.target.value)}
                             className="w-full bg-slate-50 border border-slate-200 rounded-lg p-1.5 text-[11px] outline-hidden focus:border-emerald-700 font-mono"
@@ -2036,32 +2135,37 @@ export default function AdminDashboardView({
 
                         <div>
                           <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">
-                            Quick Verified Image Presets:
+                            Unique Formulation Image Presets:
                           </p>
                           <div className="grid grid-cols-4 gap-1.5">
-                            {IMAGE_PRESETS.map((preset) => (
-                              <button
-                                key={preset.id}
-                                type="button"
-                                onClick={() => setNewProdImage(preset.url)}
-                                className={`group relative h-10 rounded-md overflow-hidden border-2 transition-all cursor-pointer ${
-                                  newProdImage === preset.url
-                                    ? "border-emerald-700 ring-2 ring-emerald-100"
-                                    : "border-slate-100 hover:border-slate-300"
-                                }`}
-                                title={preset.label}
-                              >
-                                <img
-                                  src={preset.url}
-                                  alt={preset.label}
-                                  referrerPolicy="no-referrer"
-                                  className="w-full h-full object-cover"
-                                />
-                                <span className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] text-white py-0.5 text-center font-medium">
-                                  {preset.label}
-                                </span>
-                              </button>
-                            ))}
+                            {IMAGE_PRESETS.map((preset) => {
+                              const alreadyUsed = usedProductImages.has(preset.url);
+                              return (
+                                <button
+                                  key={preset.id}
+                                  type="button"
+                                  onClick={() => setNewProdImage(preset.url)}
+                                  className={`group relative h-10 rounded-md overflow-hidden border-2 transition-all cursor-pointer ${
+                                    newProdImage === preset.url
+                                      ? "border-emerald-700 ring-2 ring-emerald-100"
+                                      : alreadyUsed
+                                      ? "border-slate-100 opacity-50 hover:opacity-80"
+                                      : "border-slate-100 hover:border-slate-300"
+                                  }`}
+                                  title={alreadyUsed ? `${preset.label} (already assigned to a product)` : preset.label}
+                                >
+                                  <img
+                                    src={preset.url}
+                                    alt={preset.label}
+                                    referrerPolicy="no-referrer"
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <span className="absolute bottom-0 inset-x-0 bg-black/65 text-[8px] text-white py-0.5 text-center font-medium">
+                                    {alreadyUsed ? `${preset.label} · Used` : preset.label}
+                                  </span>
+                                </button>
+                              );
+                            })}
                           </div>
                         </div>
                       </div>

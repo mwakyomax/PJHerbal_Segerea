@@ -12,14 +12,20 @@ import {
   Menu,
   X,
   ChevronDown,
-  Sparkles,
   MapPin,
   ArrowRight,
   ShieldCheck,
-  LogOut
+  LogOut,
+  Home,
+  ShoppingBag,
+  BookOpen,
+  Building2,
+  ChevronRight,
+  Layers
 } from "lucide-react";
 import { Product, Category, SiteSettings } from "../types";
 import { FirebaseUser } from "../lib/firebase";
+import { resolveProductImage, handleImageFallback } from "../lib/clinicMedia";
 
 interface NavigationProps {
   currentPath: string;
@@ -27,6 +33,7 @@ interface NavigationProps {
   setProductSlug: (slug: string) => void;
   cartCount: number;
   products: Product[];
+  currentCategory?: Category | null;
   onSelectCategory: (category: Category | null) => void;
   searchQuery?: string;
   onSearchSubmit?: (query: string) => void;
@@ -42,6 +49,7 @@ export default function Navigation({
   setProductSlug,
   cartCount,
   products,
+  currentCategory = null,
   onSelectCategory,
   searchQuery: initialSearchQuery = "",
   onSearchSubmit,
@@ -76,6 +84,15 @@ export default function Navigation({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMobileMenuOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [mobileMenuOpen]);
 
   const categories: Category[] = [
     "Men's Health",
@@ -151,11 +168,11 @@ export default function Navigation({
           </div>
 
           <div className="flex items-center gap-3 sm:gap-4 text-[10px] tracking-wide shrink-0">
-            <span className="hidden md:inline-flex items-center gap-1 text-emerald-200">
-              <Sparkles className="w-3 h-3 text-amber-400" /> Fast Delivery Nationwide
+            <span className="hidden md:inline text-emerald-200">
+              Fast Delivery Nationwide
             </span>
 
-            <span className="hidden md:inline text-emerald-400">|</span>
+            <span className="hidden md:inline text-emerald-600" aria-hidden="true">·</span>
 
             <a
               href="tel:+255629899017"
@@ -194,17 +211,17 @@ export default function Navigation({
           </button>
 
           {/* 2. Desktop Navigation Links */}
-          <nav className="hidden xl:flex items-center gap-1 2xl:gap-2 shrink-0">
+          <nav className="hidden xl:flex items-center gap-5 shrink-0">
             <button
               type="button"
               onClick={() => {
                 setCurrentPath("home");
                 onSelectCategory(null);
               }}
-              className={`text-xs font-extrabold tracking-wide uppercase transition-colors px-3 py-1.5 rounded-full ${
+              className={`text-xs font-bold tracking-wide transition-colors py-1.5 border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
                 currentPath === "home"
-                  ? "bg-emerald-50 text-emerald-900 font-black"
-                  : "text-slate-600 hover:text-emerald-900 hover:bg-stone-100/70"
+                  ? "border-emerald-800 text-emerald-950"
+                  : "border-transparent text-slate-600 hover:text-emerald-900 hover:border-stone-300"
               }`}
               id="nav-home-btn"
             >
@@ -216,23 +233,52 @@ export default function Navigation({
                 type="button"
                 onClick={() => setCategoriesOpen(!categoriesOpen)}
                 onBlur={() => setTimeout(() => setCategoriesOpen(false), 200)}
-                className="flex items-center gap-1 text-xs font-extrabold tracking-wide uppercase text-slate-600 hover:text-emerald-900 transition-colors px-3 py-1.5 rounded-full"
+                className="flex items-center gap-1 text-xs font-bold tracking-wide text-slate-600 hover:text-emerald-900 transition-colors py-1.5 border-b-2 border-transparent hover:border-stone-300 whitespace-nowrap shrink-0 cursor-pointer"
                 id="nav-categories-dropdown-btn"
               >
                 Categories <ChevronDown className="w-3 h-3" />
               </button>
               {categoriesOpen && (
-                <div className="absolute left-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-stone-200/90 py-1.5 z-50">
-                  {categories.map((cat) => (
-                    <button
-                      type="button"
-                      key={cat}
-                      onMouseDown={() => handleCategoryClick(cat)}
-                      className="w-full text-left px-4 py-2 text-xs font-bold text-slate-700 hover:bg-emerald-50 hover:text-emerald-900 transition-colors"
-                    >
-                      {cat}
-                    </button>
-                  ))}
+                <div className="absolute left-0 mt-2 w-60 bg-white rounded-xl shadow-lg border border-stone-200/90 p-1.5 z-50 space-y-0.5">
+                  <button
+                    type="button"
+                    onMouseDown={() => {
+                      onSelectCategory(null);
+                      setCurrentPath("shop");
+                      setCategoriesOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                      currentPath === "shop" && currentCategory === null
+                        ? "bg-emerald-900 text-white"
+                        : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-900"
+                    }`}
+                  >
+                    <span>All Formulations</span>
+                    <span className={`text-[11px] tabular-nums ${currentPath === "shop" && currentCategory === null ? "text-emerald-200" : "text-slate-400"}`}>
+                      {products.length}
+                    </span>
+                  </button>
+                  {categories.map((cat) => {
+                    const count = products.filter((p) => p.category === cat).length;
+                    const active = currentPath === "shop" && currentCategory === cat;
+                    return (
+                      <button
+                        type="button"
+                        key={cat}
+                        onMouseDown={() => handleCategoryClick(cat)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                          active
+                            ? "bg-emerald-900 text-white"
+                            : "text-slate-700 hover:bg-emerald-50 hover:text-emerald-900"
+                        }`}
+                      >
+                        <span>{cat}</span>
+                        <span className={`text-[11px] tabular-nums ${active ? "text-emerald-200" : "text-slate-400"}`}>
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -243,10 +289,10 @@ export default function Navigation({
                 setCurrentPath("shop");
                 onSelectCategory(null);
               }}
-              className={`text-xs font-extrabold tracking-wide uppercase transition-colors px-3 py-1.5 rounded-full ${
+              className={`text-xs font-bold tracking-wide transition-colors py-1.5 border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
                 currentPath === "shop"
-                  ? "bg-emerald-50 text-emerald-900 font-black"
-                  : "text-slate-600 hover:text-emerald-900 hover:bg-stone-100/70"
+                  ? "border-emerald-800 text-emerald-950"
+                  : "border-transparent text-slate-600 hover:text-emerald-900 hover:border-stone-300"
               }`}
               id="nav-shop-btn"
             >
@@ -256,10 +302,10 @@ export default function Navigation({
             <button
               type="button"
               onClick={() => setCurrentPath("blog")}
-              className={`text-xs font-extrabold tracking-wide uppercase transition-colors px-3 py-1.5 rounded-full ${
+              className={`text-xs font-bold tracking-wide transition-colors py-1.5 border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
                 currentPath === "blog" || currentPath.startsWith("blog/")
-                  ? "bg-emerald-50 text-emerald-900 font-black"
-                  : "text-slate-600 hover:text-emerald-900 hover:bg-stone-100/70"
+                  ? "border-emerald-800 text-emerald-950"
+                  : "border-transparent text-slate-600 hover:text-emerald-900 hover:border-stone-300"
               }`}
               id="nav-blog-btn"
             >
@@ -269,10 +315,10 @@ export default function Navigation({
             <button
               type="button"
               onClick={() => setCurrentPath("about")}
-              className={`text-xs font-extrabold tracking-wide uppercase transition-colors px-3 py-1.5 rounded-full ${
+              className={`text-xs font-bold tracking-wide transition-colors py-1.5 border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
                 currentPath === "about"
-                  ? "bg-emerald-50 text-emerald-900 font-black"
-                  : "text-slate-600 hover:text-emerald-900 hover:bg-stone-100/70"
+                  ? "border-emerald-800 text-emerald-950"
+                  : "border-transparent text-slate-600 hover:text-emerald-900 hover:border-stone-300"
               }`}
               id="nav-about-btn"
             >
@@ -282,10 +328,10 @@ export default function Navigation({
             <button
               type="button"
               onClick={() => setCurrentPath("contact")}
-              className={`text-xs font-extrabold tracking-wide uppercase transition-colors px-3 py-1.5 rounded-full ${
+              className={`text-xs font-bold tracking-wide transition-colors py-1.5 border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
                 currentPath === "contact"
-                  ? "bg-emerald-50 text-emerald-900 font-black"
-                  : "text-slate-600 hover:text-emerald-900 hover:bg-stone-100/70"
+                  ? "border-emerald-800 text-emerald-950"
+                  : "border-transparent text-slate-600 hover:text-emerald-900 hover:border-stone-300"
               }`}
               id="nav-contact-btn"
             >
@@ -357,8 +403,9 @@ export default function Navigation({
                           className="w-full p-2.5 hover:bg-emerald-50/60 cursor-pointer transition-colors flex gap-2.5 items-center group text-left"
                         >
                           <img
-                            src={p.images[0]}
+                            src={resolveProductImage(p)}
                             alt={p.name}
+                            onError={handleImageFallback}
                             className="w-10 h-10 object-cover rounded-xl border border-stone-200 shrink-0"
                             referrerPolicy="no-referrer"
                           />
@@ -500,243 +547,306 @@ export default function Navigation({
         </div>
       </div>
 
-      {/* Mobile Menu Drawer */}
+      {/* Left Sidebar Menu Drawer */}
       {mobileMenuOpen && (
-        <div className="xl:hidden border-t border-slate-200 bg-white shadow-xl max-h-[85vh] overflow-y-auto">
-          <div ref={mobileSearchContainerRef} className="p-4 border-b border-slate-100 bg-stone-50/50">
-            <form onSubmit={handleSearchSubmit} className="relative flex items-center">
-              <input
-                id="nav-mobile-search-input"
-                type="text"
-                placeholder="Search supplements (e.g. Moringa)..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setShowSearchResults(true);
-                }}
-                onFocus={() => setShowSearchResults(true)}
-                className="w-full bg-white border border-slate-200 focus:border-emerald-700 focus:bg-white rounded-full py-2 pl-4 pr-16 text-xs outline-hidden text-slate-800"
-              />
-              <div className="absolute right-1.5 flex items-center gap-1">
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={handleClearSearch}
-                    className="p-1 text-slate-400 hover:text-slate-600 rounded-full"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-                <button
-                  type="submit"
-                  className="p-1.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-full shadow-xs"
-                >
-                  <Search className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </form>
+        <div className="fixed inset-0 z-50 xl:hidden flex" role="dialog" aria-modal="true" aria-label="Clinic navigation menu">
+          <div
+            className="fixed inset-0 bg-emerald-950/45 backdrop-blur-[2px]"
+            onClick={() => setMobileMenuOpen(false)}
+          />
 
-            {showSearchResults && searchQuery.trim() && (
-              <div className="mt-2 bg-white rounded-xl border border-slate-200 max-h-64 overflow-y-auto shadow-md divide-y divide-slate-100">
-                {filteredProducts.length > 0 ? (
-                  <>
-                    <div className="divide-y divide-slate-100">
-                      {filteredProducts.slice(0, 4).map((p) => (
-                        <button
-                          type="button"
-                          key={p.id}
-                          onClick={() => handleSearchSelect(p.slug)}
-                          className="w-full p-3 hover:bg-slate-50 flex items-center gap-3 text-left cursor-pointer"
-                        >
-                          <img
-                            src={p.images[0]}
-                            alt={p.name}
-                            className="w-10 h-10 object-cover rounded-lg border border-slate-200 shrink-0"
-                            referrerPolicy="no-referrer"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-semibold text-slate-800 truncate">{p.name}</p>
-                            <p className="text-[10px] text-slate-500 truncate">{p.category}</p>
-                          </div>
-                          <span className="text-xs font-bold text-emerald-800 shrink-0">
-                            {p.price.toLocaleString()} TZS
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleSearchSubmit()}
-                      className="w-full p-2.5 bg-emerald-50 text-emerald-950 text-xs font-bold flex items-center justify-between"
-                    >
-                      <span>View all results in Shop ({filteredProducts.length})</span>
-                      <ArrowRight className="w-3.5 h-3.5 text-emerald-800" />
-                    </button>
-                  </>
-                ) : (
-                  <div className="p-4 text-center space-y-2">
-                    <p className="text-xs text-slate-500">No supplements found</p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onSelectCategory(null);
-                        setCurrentPath("shop");
-                        setMobileMenuOpen(false);
-                      }}
-                      className="text-xs font-bold text-emerald-800 underline"
-                    >
-                      Go to Shop Catalog
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {(!authUser || isAdmin) && (
-            <div className="p-4 border-b border-slate-100">
+          <aside className="relative w-80 max-w-[86vw] h-full bg-white border-r border-stone-200 shadow-2xl flex flex-col z-10 text-left">
+            {/* Sidebar Header */}
+            <div className="px-4 py-3.5 border-b border-stone-200/80 flex items-center justify-between shrink-0 bg-stone-50/70">
               <button
                 type="button"
                 onClick={() => {
-                  setCurrentPath("admin");
+                  setCurrentPath("home");
+                  onSelectCategory(null);
                   setMobileMenuOpen(false);
                 }}
-                className="w-full p-3 rounded-2xl bg-amber-50 border border-amber-300 text-left hover:bg-amber-100 transition-colors flex items-center justify-between"
+                className="flex items-center gap-2.5 text-left cursor-pointer"
               >
-                <div>
-                  <div className="flex items-center gap-1.5 text-amber-950 font-black text-xs">
-                    <ShieldCheck className="w-4 h-4 text-amber-700" />
-                    <span>Admin Management Portal</span>
-                  </div>
-                  <p className="text-[10px] text-amber-700 mt-0.5">Manage Orders, Inventory & Blog CMS</p>
+                <div className="w-8 h-8 rounded-full bg-emerald-900 flex items-center justify-center text-white font-bold text-xs border border-amber-400/80 shrink-0">
+                  PJ
                 </div>
-                <ArrowRight className="w-4 h-4 text-amber-700" />
+                <div>
+                  <span className="font-serif text-base font-black text-emerald-950 leading-none block">
+                    PJHERBAL
+                  </span>
+                  <span className="text-[10px] font-semibold text-amber-700 block mt-0.5">
+                    Segerea Branch Menu
+                  </span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-stone-200/70 transition-colors cursor-pointer"
+                aria-label="Close menu"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
-          )}
 
-          <div className="py-2 px-4 space-y-1">
-            <button
-              type="button"
-              onClick={() => {
-                setCurrentPath("home");
-                onSelectCategory(null);
-                setMobileMenuOpen(false);
-              }}
-              className="w-full text-left py-2.5 px-3 rounded-xl text-sm font-bold text-slate-800 hover:bg-emerald-50 hover:text-emerald-900"
-            >
-              Home
-            </button>
+            {/* Sidebar Search */}
+            <div ref={mobileSearchContainerRef} className="p-3.5 border-b border-stone-100 bg-white shrink-0">
+              <form onSubmit={handleSearchSubmit} className="relative flex items-center">
+                <input
+                  id="nav-mobile-search-input"
+                  type="text"
+                  placeholder="Search Moringa, Prostate, Detox..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowSearchResults(true);
+                  }}
+                  onFocus={() => setShowSearchResults(true)}
+                  className="w-full bg-stone-50 border border-stone-200 focus:border-emerald-700 focus:bg-white rounded-xl py-2 pl-3.5 pr-16 text-xs outline-hidden text-slate-800"
+                />
+                <div className="absolute right-1.5 flex items-center gap-1">
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={handleClearSearch}
+                      className="p-1 text-slate-400 hover:text-slate-600 rounded-full"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    className="p-1.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-lg"
+                  >
+                    <Search className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </form>
 
-            <button
-              type="button"
-              onClick={() => {
-                setCurrentPath("shop");
-                onSelectCategory(null);
-                setMobileMenuOpen(false);
-              }}
-              className="w-full text-left py-2.5 px-3 rounded-xl text-sm font-bold text-slate-800 hover:bg-emerald-50 hover:text-emerald-900"
-            >
-              Dispensary Shop
-            </button>
+              {showSearchResults && searchQuery.trim() && (
+                <div className="mt-2 bg-white rounded-xl border border-stone-200 max-h-56 overflow-y-auto shadow-md divide-y divide-stone-100">
+                  {filteredProducts.length > 0 ? (
+                    <>
+                      <div className="divide-y divide-stone-100">
+                        {filteredProducts.slice(0, 4).map((p) => (
+                          <button
+                            type="button"
+                            key={p.id}
+                            onClick={() => handleSearchSelect(p.slug)}
+                            className="w-full p-2.5 hover:bg-stone-50 flex items-center gap-2.5 text-left cursor-pointer"
+                          >
+                            <img
+                              src={resolveProductImage(p)}
+                              alt={p.name}
+                              onError={handleImageFallback}
+                              className="w-9 h-9 object-cover rounded-lg border border-stone-200 shrink-0"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold text-slate-800 truncate">{p.name}</p>
+                              <p className="text-[10px] text-slate-500 truncate">{p.category}</p>
+                            </div>
+                            <span className="text-xs font-bold text-emerald-800 tabular-nums shrink-0">
+                              {p.price.toLocaleString()} TZS
+                            </span>
+                          </button>
+                        ))}
+                      </div>
 
-            <div className="py-1.5 px-3 bg-stone-50 rounded-2xl my-1">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Supplement Categories</p>
-              <div className="grid grid-cols-2 gap-1.5">
-                {categories.map((cat) => (
+                      <button
+                        type="button"
+                        onClick={() => handleSearchSubmit()}
+                        className="w-full p-2.5 bg-emerald-50 text-emerald-950 text-xs font-bold flex items-center justify-between"
+                      >
+                        <span>View all results ({filteredProducts.length})</span>
+                        <ArrowRight className="w-3.5 h-3.5 text-emerald-800" />
+                      </button>
+                    </>
+                  ) : (
+                    <div className="p-3.5 text-center space-y-1.5">
+                      <p className="text-xs text-slate-500">No supplements found</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onSelectCategory(null);
+                          setCurrentPath("shop");
+                          setMobileMenuOpen(false);
+                        }}
+                        className="text-xs font-bold text-emerald-800 underline"
+                      >
+                        Browse Shop Catalog
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Sidebar Vertical Selector Sections */}
+            <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">
+                  Dispensary Navigation
+                </p>
+                <div className="space-y-1">
+                  {[
+                    {
+                      id: "home",
+                      label: "Home",
+                      icon: Home,
+                      active: currentPath === "home",
+                      onClick: () => {
+                        setCurrentPath("home");
+                        onSelectCategory(null);
+                        setMobileMenuOpen(false);
+                      }
+                    },
+                    {
+                      id: "shop",
+                      label: "Dispensary Shop",
+                      icon: ShoppingBag,
+                      active: currentPath === "shop" && currentCategory === null,
+                      onClick: () => {
+                        setCurrentPath("shop");
+                        onSelectCategory(null);
+                        setMobileMenuOpen(false);
+                      }
+                    },
+                    {
+                      id: "blog",
+                      label: "Health Blog & Remedies",
+                      icon: BookOpen,
+                      active: currentPath === "blog" || currentPath.startsWith("blog/"),
+                      onClick: () => {
+                        setCurrentPath("blog");
+                        setMobileMenuOpen(false);
+                      }
+                    },
+                    {
+                      id: "about",
+                      label: "About Clinic & Specialists",
+                      icon: Building2,
+                      active: currentPath === "about",
+                      onClick: () => {
+                        setCurrentPath("about");
+                        setMobileMenuOpen(false);
+                      }
+                    },
+                    {
+                      id: "contact",
+                      label: "Contact & Branch Location",
+                      icon: MapPin,
+                      active: currentPath === "contact",
+                      onClick: () => {
+                        setCurrentPath("contact");
+                        setMobileMenuOpen(false);
+                      }
+                    }
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        type="button"
+                        key={item.id}
+                        onClick={item.onClick}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                          item.active
+                            ? "bg-emerald-900 text-white shadow-xs"
+                            : "text-slate-700 hover:bg-stone-100 hover:text-emerald-950"
+                        }`}
+                      >
+                        <span className="flex items-center gap-2.5">
+                          <Icon className={`w-4 h-4 shrink-0 ${item.active ? "text-amber-300" : "text-slate-400"}`} />
+                          <span>{item.label}</span>
+                        </span>
+                        <ChevronRight className={`w-3.5 h-3.5 ${item.active ? "text-emerald-200" : "text-slate-300"}`} />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">
+                  Category Selector
+                </p>
+                <div className="space-y-1">
                   <button
                     type="button"
-                    key={cat}
-                    onClick={() => handleCategoryClick(cat)}
-                    className="text-left text-xs py-1.5 px-2 rounded-lg text-slate-600 hover:bg-emerald-50 hover:text-emerald-900 transition-colors font-medium"
+                    onClick={() => {
+                      onSelectCategory(null);
+                      setCurrentPath("shop");
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                      currentPath === "shop" && currentCategory === null
+                        ? "bg-emerald-900 text-white shadow-xs"
+                        : "text-slate-700 hover:bg-stone-100 hover:text-emerald-950"
+                    }`}
                   >
-                    {cat}
+                    <span className="flex items-center gap-2.5">
+                      <Layers
+                        className={`w-4 h-4 shrink-0 ${
+                          currentPath === "shop" && currentCategory === null ? "text-amber-300" : "text-slate-400"
+                        }`}
+                      />
+                      <span>All Categories</span>
+                    </span>
+                    <span
+                      className={`text-[11px] tabular-nums ${
+                        currentPath === "shop" && currentCategory === null ? "text-emerald-200" : "text-slate-400"
+                      }`}
+                    >
+                      {products.length}
+                    </span>
                   </button>
-                ))}
+
+                  {categories.map((cat) => {
+                    const count = products.filter((p) => p.category === cat).length;
+                    const active = currentPath === "shop" && currentCategory === cat;
+                    return (
+                      <button
+                        type="button"
+                        key={cat}
+                        onClick={() => handleCategoryClick(cat)}
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer ${
+                          active
+                            ? "bg-emerald-900 text-white font-semibold shadow-xs"
+                            : "text-slate-600 hover:bg-stone-100 hover:text-emerald-950"
+                        }`}
+                      >
+                        <span className="pl-6 truncate">{cat}</span>
+                        <span className={`text-[11px] tabular-nums ${active ? "text-emerald-200" : "text-slate-400"}`}>
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
+            </nav>
+
+            {/* Sidebar Footer */}
+            <div className="p-3.5 border-t border-stone-200/80 bg-stone-50/80 space-y-2 shrink-0">
+              <a
+                href="tel:+255629899017"
+                className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white border border-stone-200 text-slate-800 text-xs font-semibold hover:bg-stone-100 transition-colors"
+              >
+                <Phone className="w-3.5 h-3.5 text-emerald-800" />
+                <span>Call +255 629 899 017</span>
+              </a>
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-emerald-800 text-white text-xs font-semibold hover:bg-emerald-900 transition-colors"
+              >
+                <span>Consult via WhatsApp</span>
+              </a>
             </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setCurrentPath("blog");
-                setMobileMenuOpen(false);
-              }}
-              className="w-full text-left py-2.5 px-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-900"
-            >
-              Health Blog & Remedies
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setCurrentPath("about");
-                setMobileMenuOpen(false);
-              }}
-              className="w-full text-left py-2.5 px-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-900"
-            >
-              About Clinic & Specialists
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setCurrentPath("contact");
-                setMobileMenuOpen(false);
-              }}
-              className="w-full text-left py-2.5 px-3 rounded-xl text-sm font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-900"
-            >
-              Contact & Branch Location
-            </button>
-
-            {(!authUser || !isAdmin) && (
-              <button
-                type="button"
-                onClick={() => {
-                  setCurrentPath("customer-dashboard");
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full text-left py-2.5 px-3 rounded-xl text-sm font-bold text-emerald-900 bg-emerald-50 hover:bg-emerald-100 flex items-center justify-between"
-              >
-                <span>{authUser ? "My Account Dashboard" : "Customer Portal"}</span>
-                <User className="w-4 h-4 text-emerald-800" />
-              </button>
-            )}
-
-            {authUser && (
-              <button
-                type="button"
-                onClick={() => {
-                  onSignOut();
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full text-left py-2.5 px-3 rounded-xl text-sm font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 flex items-center justify-between"
-              >
-                <span>Sign Out</span>
-                <LogOut className="w-4 h-4 text-rose-700" />
-              </button>
-            )}
-          </div>
-
-          <div className="p-4 border-t border-slate-100 bg-slate-50 flex flex-col gap-2">
-            <a
-              href="tel:+255629899017"
-              className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-slate-200 text-slate-800 text-sm font-bold hover:bg-slate-300 transition-colors"
-            >
-              <Phone className="w-4 h-4 text-emerald-800" />
-              <span>Call Specialist (+255 629 899 017)</span>
-            </a>
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-full bg-green-600 text-white text-sm font-bold hover:bg-green-700 transition-colors"
-            >
-              <span>Consultation WhatsApp</span>
-            </a>
-          </div>
+          </aside>
         </div>
       )}
     </header>

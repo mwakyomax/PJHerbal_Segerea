@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Phone, Mail, MapPin, Instagram, Facebook, Send, Sparkles, Loader2 } from "lucide-react";
+import { Phone, Mail, MapPin, Instagram, Facebook, Send, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 import {
@@ -728,6 +728,7 @@ export default function App() {
           setProductSlug={setProductSlug}
           cartCount={cart.reduce((acc, item) => acc + item.quantity, 0)}
           products={products}
+          currentCategory={currentCategory}
           searchQuery={searchQuery}
           onSearchSubmit={(query) => {
             setSearchQuery(query);
@@ -765,16 +766,16 @@ export default function App() {
       {!isInAuthenticatedDashboard && (
       <footer className="bg-emerald-950 text-white border-t border-emerald-900 pt-16 pb-8 font-sans w-full max-w-full overflow-x-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 border-b border-emerald-900/60">
-          <div className="bg-emerald-900/40 rounded-3xl p-6 md:p-10 border border-emerald-800 flex flex-col md:flex-row justify-between items-center gap-8 text-left">
+          <div className="bg-emerald-900/40 rounded-2xl p-6 md:p-10 border border-emerald-800 flex flex-col md:flex-row justify-between items-center gap-8 text-left">
             <div className="space-y-2 max-w-md">
-              <span className="text-[10px] font-extrabold text-amber-400 uppercase tracking-widest flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4" /> Join our wellness circle
+              <span className="text-xs font-semibold text-amber-300 block">
+                Segerea Clinic Notes
               </span>
               <h3 className="font-serif font-bold text-white text-xl sm:text-2xl leading-snug">
-                Subscribe for Weekly Health Guidelines & Clinic Updates
+                Weekly Herbal Guides & Clinic Announcements
               </h3>
               <p className="text-xs text-emerald-200/80 font-light leading-relaxed">
-                Receive verified botanical insights, preventative nutrition guides, and Segerea clinic announcements.
+                Receive preventative nutrition notes, seasonal herb availability, and Segerea dispensary updates.
               </p>
             </div>
 
@@ -959,22 +960,12 @@ export default function App() {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-emerald-900/40 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-light text-emerald-200/55">
-          <p>© 2026 PJHerbal Clinic - Segerea Branch. All Rights Reserved. Sourced Organically.</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-emerald-900/40 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs font-light text-emerald-200/65">
+          <p>© 2026 PJHerbal Clinic - Segerea Branch. All Rights Reserved.</p>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[10px] text-emerald-400 uppercase tracking-widest font-bold pr-1">
-              Accepted Settlement:
-            </span>
-            {["Cash on Delivery", "Clinic Pickup", "M-Pesa", "Tigo Pesa", "Airtel Money", "CRDB / NMB"].map((p) => (
-              <span
-                key={p}
-                className="bg-emerald-900/60 border border-emerald-800 text-[9px] font-bold px-2 py-0.5 rounded-sm text-emerald-300"
-              >
-                {p}
-              </span>
-            ))}
-          </div>
+          <p className="text-[11px] text-emerald-200/75 text-left sm:text-right">
+            Accepted Payment: Cash on Delivery · Clinic Pickup · M-Pesa · Tigo Pesa · Airtel Money · CRDB / NMB
+          </p>
         </div>
       </footer>
       )}

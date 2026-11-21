@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { CartItem, PromoCampaign } from "../types";
 import { TANZANIA_REGIONS } from "../data";
+import { resolveProductImage, handleImageFallback } from "../lib/clinicMedia";
 
 interface CartViewProps {
   cartItems: CartItem[];
@@ -111,8 +112,9 @@ export default function CartView({
                     >
                       <div className="col-span-6 flex gap-4 w-full items-center">
                         <img
-                          src={item.product.images[0]}
+                          src={resolveProductImage(item.product)}
                           alt={item.product.name}
+                          onError={handleImageFallback}
                           className="w-16 h-16 object-cover rounded-xl border border-slate-100 shadow-2xs shrink-0"
                           referrerPolicy="no-referrer"
                         />

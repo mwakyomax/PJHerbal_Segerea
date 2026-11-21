@@ -1,6 +1,6 @@
 {
   "name": "PJHerbal Clinic - Segerea Branch",
-  "description": "Modern Mobile-First E-Commerce Platform for Nutritional Supplements in Tanzania. Built with integrated payments, WhatsApp consultation, order tracking, and an extensive admin/customer panel.",
+  "description": "Online dispensary and patient order center for PJHerbal Clinic — Segerea Branch in Dar es Salaam, Tanzania.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

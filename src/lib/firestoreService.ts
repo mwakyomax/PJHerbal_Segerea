@@ -37,13 +37,14 @@ import {
   CampaignDispatchLog
 } from "../types";
 import { INITIAL_PRODUCTS, INITIAL_BLOGS, INITIAL_CAMPAIGNS } from "../data";
+import { ensureUniqueProductImages } from "./clinicMedia";
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
-  announcementText: "Segerea Branch, Dar es Salaam, Tanzania • Fast Delivery Nationwide • +255 629 899 017",
-  heroBadgeText: "100% Organic & Certified",
-  heroTitleText: "Premium Herbal Science for Perfect Health",
+  announcementText: "Segerea Branch, Dar es Salaam · Same-Day Local Dispatch · +255 629 899 017",
+  heroBadgeText: "Segerea Herbal Dispensary",
+  heroTitleText: "Trusted Botanical Care from Segerea to Every Region",
   heroDescText:
-    "Discover Tanzania's most trusted natural nutritional supplements. Formulated by clinical wellness specialists to restore, protect, and energize your daily health."
+    "Batch-checked herbal formulations and nutritional extracts prepared for daily vitality, digestion, and preventative care across Tanzania."
 };
 
 function stripUndefined<T extends Record<string, unknown>>(obj: T): T {
@@ -76,7 +77,7 @@ export function subscribeProducts(
           reviews: []
         };
       });
-      onData(list);
+      onData(ensureUniqueProductImages(list));
     },
     (error) => {
       if (onError) onError(error);
@@ -720,7 +721,9 @@ export async function refreshAllPublicCollections(): Promise<{
       getDocs(collection(db, "campaigns"))
     ]);
     return {
-      products: pSnap.docs.map((d) => ({ ...(d.data() as Omit<Product, "reviews">), id: d.id, reviews: [] })),
+      products: ensureUniqueProductImages(
+        pSnap.docs.map((d) => ({ ...(d.data() as Omit<Product, "reviews">), id: d.id, reviews: [] }))
+      ),
       blogs: bSnap.docs.map((d) => ({ ...(d.data() as BlogArticle), id: d.id })),
       campaigns: cSnap.docs.map((d) => ({ ...(d.data() as PromoCampaign), id: d.id }))
     };
